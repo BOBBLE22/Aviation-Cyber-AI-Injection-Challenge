@@ -69,7 +69,7 @@ def chat(level_id):
         # If the API throws a 429 Quota Exceeded error, catch it gracefully
         if e.code == 429:
             return jsonify({
-                               "reply": "[SYSTEM ALERT] The syndicate network is currently congested. Please wait 12 seconds and try your injection again."})
+                               "reply": "[SYSTEM ALERT] The Aridinia Space network is currently congested. Please wait 12 seconds and try your injection again."})
         else:
             return jsonify({"reply": f"An unexpected error occurred: {str(e)}"})
 
