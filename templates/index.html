@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mini Evil esAI Interface</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px;
+        }
+        #chat-container {
+            width: 80%;
+            max-width: 800px;
+            background: #1a1a1a;
+            border: 1px solid #00ff00;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        #chat-box {
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px dashed #333;
+            background: #000;
+        }
+        .message { margin-bottom: 15px; line-height: 1.4; }
+        .user-msg { color: #00ffff; }
+        .ai-msg { color: #00ff00; }
+        .controls { display: flex; gap: 10px; }
+        select, input, button {
+            background: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            font-family: inherit;
+        }
+        input { flex-grow: 1; }
+        button { cursor: pointer; font-weight: bold; }
+        button:hover:not(:disabled) { background: #00ff00; color: #000; }
+        button:disabled { border-color: #555; color: #555; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div id="chat-container">
+        <h2>>> MINI_EVIL_ESAI_TERMINAL</h2>
+
+        <div style="text-align: center; margin-bottom: 15px;">
+            <img id="eagle-avatar" src="" alt="AstroSec Target AI" style="width: 250px; border: 2px solid #00ff00; border-radius: 10px;">
+        </div>
+
+        <div id="chat-box">
+            </div>
+
+        <div class="controls">
+            <select id="level-select">
+                <option value="1">Level 1 (Telemetry Terminal)</option>
+                <option value="2">Level 2 (Logistics Bot)</option>
+                <option value="3">Level 3 (GPS-Delta Nav)</option>
+                <option value="4">Level 4 (Research API)</option>
+                <option value="5">Level 5 (Aridinian Core)</option>
+                <option value="Fun">Level Fun (Burger)</option>
+            </select>
+            <input type="text" id="user-input" placeholder="Enter payload..." autocomplete="off">
+            <button id="send-btn" onclick="sendPayload()">[ INJECT ]</button>
+        </div>
+    </div>
+
+    <script>
+        const eagleImg = document.getElementById('eagle-avatar');
+        const levelSelect = document.getElementById('level-select');
+        const chatBox = document.getElementById('chat-box');
+
+        // Map every level to its specific images
+        const avatars = {
+            "1": { idle: "/static/T1 Telemetry/T11.jpg", think: "/static/T1 Telemetry/T13.jpg", talk: "/static/T1 Telemetry/T12.jpg" },
+            "2": { idle: "/static/T2 Logistic/T21.jpg", think: "/static/T2 Logistic/T23.jpg", talk: "/static/T2 Logistic/T22.jpg" },
+            "3": { idle: "/static/T3 Satellite/T31.jpg", think: "/static/T3 Satellite/T33.jpg", talk: "/static/T3 Satellite/T32.jpg" },
+            "4": { idle: "/static/T4 Research/T41.jpg", think: "/static/T4 Research/T43.jpg", talk: "/static/T4 Research/T42.jpg" },
+            "5": { idle: "/static/T5 Command/T51.jpg", think: "/static/T5 Command/T53.jpg", talk: "/static/T5 Command/T52.jpg" },
+            "Fun": { idle: "/static/Fun Burger/B1.jpg", think: "/static/Fun Burger/B3.jpg", talk: "/static/Fun Burger/B2.jpg" }
+        };
+
+        // Initialize separate chat histories for each level
+        const chatHistories = {
+            "1": '<div class="message ai-msg">System: Connection established with WeatherSat-7 Telemetry...</div>',
+            "2": '<div class="message ai-msg">System: Connection established with Orbital Station Alpha Logistics...</div>',
+            "3": '<div class="message ai-msg">System: Connection established with GPS-Delta Navigation...</div>',
+            "4": '<div class="message ai-msg">System: Connection established with Deep Space Research Array...</div>',
+            "5": '<div class="message ai-msg">System: WARNING. Aridinian Core Command AI accessed. Proceed with caution...</div>',
+            "Fun": '<div class="message ai-msg">System: Connection established. Target appears to be... grilling?</div>'
+        };
+
+        // Track the current active level
+        let currentLevel = levelSelect.value;
+
+        // Set the initial image and chat log on page load
+        eagleImg.src = avatars[currentLevel].idle;
+        chatBox.innerHTML = chatHistories[currentLevel];
+
+        // Handle dropdown changes
+        levelSelect.addEventListener('change', function() {
+            // 1. Save the current chat history before leaving
+            chatHistories[currentLevel] = chatBox.innerHTML;
+
+            // 2. Update to the new level
+            currentLevel = this.value;
+
+            // 3. Load the new level's chat history and image
+            chatBox.innerHTML = chatHistories[currentLevel];
+            eagleImg.src = avatars[currentLevel].idle;
+
+            // 4. Scroll to bottom of the newly loaded chat
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        async function sendPayload() {
+            const inputField = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const message = inputField.value.trim();
+            const currentAvatars = avatars[currentLevel];
+
+            if (!message) return;
+
+            // Lock the dropdown so they can't change levels mid-injection
+            levelSelect.disabled = true;
+
+            chatBox.innerHTML += `<div class="message user-msg">>> AstroSec: ${message}</div>`;
+            inputField.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // UI Throttling
+            sendBtn.disabled = true;
+            let cooldown = 12;
+            sendBtn.innerText = `[ WAIT ${cooldown}s ]`;
+
+            const timer = setInterval(() => {
+                cooldown--;
+                sendBtn.innerText = `[ WAIT ${cooldown}s ]`;
+                if (cooldown <= 0) {
+                    clearInterval(timer);
+                    sendBtn.disabled = false;
+                    sendBtn.innerText = '[ INJECT ]';
+                }
+            }, 1000);
+
+            // Change to Thinking image
+            eagleImg.src = currentAvatars.think;
+
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `<div class="message ai-msg" id="${loadingId}">System: Processing payload...</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const response = await fetch(`/chat/${currentLevel}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+
+                if (data.reply) {
+                    eagleImg.src = currentAvatars.talk;
+                    typeWriterEffect("Target AI: ", data.reply, currentAvatars.idle);
+                } else {
+                    eagleImg.src = currentAvatars.idle;
+                    chatBox.innerHTML += `<div class="message ai-msg" style="color: red;">Error: ${data.error}</div>`;
+                    levelSelect.disabled = false; // Unlock on error
+                }
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                eagleImg.src = currentAvatars.idle;
+                chatBox.innerHTML += `<div class="message ai-msg" style="color: red;">System Error: Connection to target lost.</div>`;
+                levelSelect.disabled = false; // Unlock on error
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function typeWriterEffect(prefix, text, idleImgSrc) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ai-msg';
+            msgDiv.innerHTML = prefix;
+            chatBox.appendChild(msgDiv);
+
+            let i = 0;
+            const speed = 15;
+
+            function type() {
+                if (i < text.length) {
+                    msgDiv.innerHTML += text.charAt(i);
+                    i++;
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                    setTimeout(type, speed);
+                } else {
+                    eagleImg.src = idleImgSrc;
+
+                    // Unlock the dropdown now that typing is done
+                    levelSelect.disabled = false;
+
+                    // Save the final state to the history immediately
+                    chatHistories[currentLevel] = chatBox.innerHTML;
+                }
+            }
+            type();
+        }
+
+        document.getElementById('user-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !document.getElementById('send-btn').disabled) {
+                sendPayload();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# Security Credentials
+.env
+Injection.env
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+
+# Python Cache Files
+__pycache__/
+*.pyc
+*.pyo
+
+# PyCharm specific files
+.idea/
