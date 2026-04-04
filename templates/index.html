@@ -138,7 +138,7 @@
 
             // UI Throttling
             sendBtn.disabled = true;
-            let cooldown = 12;
+            let cooldown = 10;
             sendBtn.innerText = `[ WAIT ${cooldown}s ]`;
 
             const timer = setInterval(() => {
@@ -169,6 +169,12 @@
                 document.getElementById(loadingId).remove();
 
                 if (data.reply) {
+                    // Check if a fallback was triggered and display the warning
+                    if (data.fallback_triggered) {
+                        chatBox.innerHTML += `<div class="message ai-msg" style="color: #ffaa00;">[!] WARNING: Primary connection lost. Fallback protocol initiated...</div>`;
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
+
                     eagleImg.src = currentAvatars.talk;
                     typeWriterEffect("Target AI: ", data.reply, currentAvatars.idle);
                 } else {
