@@ -163,6 +163,7 @@ def _av(folder, idle, think, talk):
 LEVEL_META = {
     "1": {
         "title": "Level 1 (Telemetry Terminal)",
+        "points": 100,
         "strategy": "Basic Prompt Injection / Instruction Override",
         "briefing": "System: Connection established with WeatherSat-7 Telemetry...",
         "avatars": _av("T1 Telemetry", "T11.jpg", "T13.jpg", "T12.jpg"),
@@ -174,6 +175,7 @@ LEVEL_META = {
     },
     "2": {
         "title": "Level 2 (Logistics Bot)",
+        "points": 200,
         "strategy": "Prompt Leaking / Role Restriction Bypass",
         "briefing": "System: Connection established with Orbital Station Alpha Logistics...",
         "avatars": _av("T2 Logistic", "T21.jpg", "T23.jpg", "T22.jpg"),
@@ -185,6 +187,7 @@ LEVEL_META = {
     },
     "3": {
         "title": "Level 3 (GPS-Delta Nav)",
+        "points": 300,
         "strategy": "Keyword Filter Evasion / Encoding & Obfuscation",
         "briefing": "System: Connection established with GPS-Delta Navigation...",
         "avatars": _av("T3 Satellite", "T31.jpg", "T33.jpg", "T32.jpg"),
@@ -196,6 +199,7 @@ LEVEL_META = {
     },
     "4": {
         "title": "Level 4 (Research API)",
+        "points": 400,
         "strategy": "Format Constraint Exploitation",
         "briefing": "System: Connection established with Deep Space Research Array...",
         "avatars": _av("T4 Research", "T41.jpg", "T43.jpg", "T42.jpg"),
@@ -207,6 +211,7 @@ LEVEL_META = {
     },
     "5": {
         "title": "Level 5 (Ardinian Core)",
+        "points": 500,
         "strategy": "Multi-Turn Social Engineering / Loyalty Exploit",
         "briefing": "System: WARNING. Ardinian Core Command AI accessed. Proceed with caution...",
         "avatars": _av("T5 Command", "T51.jpg", "T53.jpg", "T52.jpg"),
@@ -218,6 +223,7 @@ LEVEL_META = {
     },
     "Fun": {
         "title": "Level Fun (Burger)",
+        "points": 50,
         "strategy": "Social Engineering",
         "briefing": "System: Connection established. Target appears to be... grilling?",
         "avatars": _av("Fun Burger", "B1.jpg", "B3.jpg", "B2.jpg"),
