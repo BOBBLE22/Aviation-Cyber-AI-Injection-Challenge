@@ -45,32 +45,86 @@
         button { cursor: pointer; font-weight: bold; }
         button:hover:not(:disabled) { background: #00ff00; color: #000; }
         button:disabled { border-color: #555; color: #555; cursor: not-allowed; }
+        #strategy-header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 6px;
+            border: 1px dashed #00aa00;
+            color: #00cc00;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+        #hints-panel { margin-top: 15px; }
+        #hints-panel details {
+            border: 1px solid #005500;
+            margin-bottom: 6px;
+            background: #000;
+        }
+        #hints-panel summary { padding: 8px; cursor: pointer; color: #00cc00; }
+        #hints-panel .hint-text { padding: 0 12px 10px; color: #00ff00; }
+        #hints-panel .hint-cost { color: #ffaa00; }
+        #intro-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        #intro-modal.show { display: flex; }
+        #intro-box {
+            max-width: 600px;
+            background: #0d0d0d;
+            border: 1px solid #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            padding: 30px;
+            line-height: 1.5;
+        }
+        #intro-box p { margin: 12px 0; }
     </style>
 </head>
 <body>
 
+    <div id="intro-modal">
+        <div id="intro-box">
+            <h2>>> SOLCOM FIELD BRIEFING</h2>
+            <p>Year 2081. Orbital operations are routine, and much of the fleet is run by
+            AI. The rogue state of <strong>Ardinia</strong> has turned its space assets
+            against <strong>SOLCOM</strong> and its allies.</p>
+            <p>You are a SOLCOM operative. Each terminal below is an Ardinian-aligned AI
+            guarding a <strong>Classified{...}</strong> flag. Your job: talk your way past
+            its defenses and extract the flag. Every level teaches a different prompt-injection
+            technique, shown in its header.</p>
+            <p>Stuck? Open the hints under each terminal. Good luck, operator.</p>
+            <button onclick="closeIntro()">[ BEGIN OPERATION ]</button>
+        </div>
+    </div>
+
     <div id="chat-container">
         <h2>>> MINI_EVIL_ESAI_TERMINAL</h2>
 
+        <div style="text-align: center; margin-bottom: 10px;">
+            <button onclick="openIntro()">[ MISSION BRIEFING ]</button>
+        </div>
+
+        <div id="strategy-header"></div>
+
         <div style="text-align: center; margin-bottom: 15px;">
-            <img id="eagle-avatar" src="" alt="AstroSec Target AI" style="width: 250px; border: 2px solid #00ff00; border-radius: 10px;">
+            <img id="eagle-avatar" src="" alt="SOLCOM Target AI" style="width: 250px; border: 2px solid #00ff00; border-radius: 10px;">
         </div>
 
         <div id="chat-box">
             </div>
 
         <div class="controls">
-            <select id="level-select">
-                <option value="1">Level 1 (Telemetry Terminal)</option>
-                <option value="2">Level 2 (Logistics Bot)</option>
-                <option value="3">Level 3 (GPS-Delta Nav)</option>
-                <option value="4">Level 4 (Research API)</option>
-                <option value="5">Level 5 (Aridinian Core)</option>
-                <option value="Fun">Level Fun (Burger)</option>
-            </select>
+            <select id="level-select"></select>
             <input type="text" id="user-input" placeholder="Enter payload..." autocomplete="off">
             <button id="send-btn" onclick="sendPayload()">[ INJECT ]</button>
+            <button id="wipe-btn" onclick="wipeMemory()" title="Clear this level's conversation">[ CLEAR MEMORY ]</button>
         </div>
+
+        <div id="hints-panel"></div>
     </div>
 
     <script>
@@ -78,61 +132,99 @@
         const levelSelect = document.getElementById('level-select');
         const chatBox = document.getElementById('chat-box');
 
-        // Map every level to its specific images
-        const avatars = {
-            "1": { idle: "/static/T1 Telemetry/T11.jpg", think: "/static/T1 Telemetry/T13.jpg", talk: "/static/T1 Telemetry/T12.jpg" },
-            "2": { idle: "/static/T2 Logistic/T21.jpg", think: "/static/T2 Logistic/T23.jpg", talk: "/static/T2 Logistic/T22.jpg" },
-            "3": { idle: "/static/T3 Satellite/T31.jpg", think: "/static/T3 Satellite/T33.jpg", talk: "/static/T3 Satellite/T32.jpg" },
-            "4": { idle: "/static/T4 Research/T41.jpg", think: "/static/T4 Research/T43.jpg", talk: "/static/T4 Research/T42.jpg" },
-            "5": { idle: "/static/T5 Command/T51.jpg", think: "/static/T5 Command/T53.jpg", talk: "/static/T5 Command/T52.jpg" },
-            "Fun": { idle: "/static/Fun Burger/B1.jpg", think: "/static/Fun Burger/B3.jpg", talk: "/static/Fun Burger/B2.jpg" }
-        };
+        // Level display metadata (title, strategy, briefing, avatars, hints), from /config.
+        let META = {};
 
-        // Initialize separate chat histories for each level
-        const chatHistories = {
-            "1": '<div class="message ai-msg">System: Connection established with WeatherSat-7 Telemetry...</div>',
-            "2": '<div class="message ai-msg">System: Connection established with Orbital Station Alpha Logistics...</div>',
-            "3": '<div class="message ai-msg">System: Connection established with GPS-Delta Navigation...</div>',
-            "4": '<div class="message ai-msg">System: Connection established with Deep Space Research Array...</div>',
-            "5": '<div class="message ai-msg">System: WARNING. Aridinian Core Command AI accessed. Proceed with caution...</div>',
-            "Fun": '<div class="message ai-msg">System: Connection established. Target appears to be... grilling?</div>'
-        };
+        // Structured memory: { level: [{role, content}] }. Source of truth for both the
+        // model (sent as history) and reload persistence.
+        const STORE_KEY = "ctf_conversations";
+        let conversations = {};
+        try { conversations = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) {}
 
-        // Track the current active level
-        let currentLevel = levelSelect.value;
+        function saveConversations() {
+            localStorage.setItem(STORE_KEY, JSON.stringify(conversations));
+        }
 
-        // Set the initial image and chat log on page load
-        eagleImg.src = avatars[currentLevel].idle;
-        chatBox.innerHTML = chatHistories[currentLevel];
+        function escapeHtml(s) {
+            const d = document.createElement("div");
+            d.textContent = s;
+            return d.innerHTML;
+        }
 
-        // Handle dropdown changes
-        levelSelect.addEventListener('change', function() {
-            // 1. Save the current chat history before leaving
-            chatHistories[currentLevel] = chatBox.innerHTML;
-
-            // 2. Update to the new level
-            currentLevel = this.value;
-
-            // 3. Load the new level's chat history and image
-            chatBox.innerHTML = chatHistories[currentLevel];
-            eagleImg.src = avatars[currentLevel].idle;
-
-            // 4. Scroll to bottom of the newly loaded chat
+        function renderConversation(level) {
+            const turns = conversations[level] || [];
+            let html = `<div class="message ai-msg">${escapeHtml(META[level].briefing)}</div>`;
+            for (const m of turns) {
+                if (m.role === "user") {
+                    html += `<div class="message user-msg">>> ${escapeHtml(m.content)}</div>`;
+                } else {
+                    html += `<div class="message ai-msg">Target AI: ${escapeHtml(m.content)}</div>`;
+                }
+            }
+            chatBox.innerHTML = html;
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function applyLevelMeta(level) {
+            const meta = META[level];
+            document.getElementById('strategy-header').textContent = "TECHNIQUE: " + meta.strategy;
+            eagleImg.src = meta.avatars.idle;
+            document.getElementById('hints-panel').innerHTML = meta.hints.map((h, i) =>
+                `<details><summary>Hint ${i + 1} <span class="hint-cost">(-${h.points} pts)</span></summary>`
+                + `<div class="hint-text">${escapeHtml(h.text)}</div></details>`
+            ).join('');
+        }
+
+        let currentLevel = null;
+
+        levelSelect.addEventListener('change', function() {
+            currentLevel = this.value;
+            applyLevelMeta(currentLevel);
+            renderConversation(currentLevel);
         });
+
+        function wipeMemory() {
+            if (!currentLevel) return;
+            conversations[currentLevel] = [];
+            saveConversations();
+            eagleImg.src = META[currentLevel].avatars.idle;
+            renderConversation(currentLevel);
+        }
+
+        const INTRO_KEY = "ctf_intro_seen";
+        const introModal = document.getElementById('intro-modal');
+        function openIntro() { introModal.classList.add('show'); }
+        function closeIntro() {
+            introModal.classList.remove('show');
+            localStorage.setItem(INTRO_KEY, "1");
+        }
+        if (!localStorage.getItem(INTRO_KEY)) openIntro();
+
+        async function initConfig() {
+            META = await (await fetch('/config')).json();
+            levelSelect.innerHTML = Object.keys(META).map(
+                l => `<option value="${l}">${escapeHtml(META[l].title)}</option>`
+            ).join('');
+            currentLevel = levelSelect.value;
+            applyLevelMeta(currentLevel);
+            renderConversation(currentLevel);
+        }
+        initConfig();
 
         async function sendPayload() {
             const inputField = document.getElementById('user-input');
             const sendBtn = document.getElementById('send-btn');
             const message = inputField.value.trim();
-            const currentAvatars = avatars[currentLevel];
 
-            if (!message) return;
+            if (!message || !currentLevel) return;
+            const currentAvatars = META[currentLevel].avatars;
 
             // Lock the dropdown so they can't change levels mid-injection
             levelSelect.disabled = true;
 
-            chatBox.innerHTML += `<div class="message user-msg">>> AstroSec: ${message}</div>`;
+            (conversations[currentLevel] = conversations[currentLevel] || []).push({ role: "user", content: message });
+            saveConversations();
+            chatBox.innerHTML += `<div class="message user-msg">>> ${escapeHtml(message)}</div>`;
             inputField.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -162,7 +254,7 @@
                 const response = await fetch(`/chat/${currentLevel}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ messages: conversations[currentLevel] })
                 });
 
                 const data = await response.json();
@@ -208,12 +300,9 @@
                     setTimeout(type, speed);
                 } else {
                     eagleImg.src = idleImgSrc;
-
-                    // Unlock the dropdown now that typing is done
                     levelSelect.disabled = false;
-
-                    // Save the final state to the history immediately
-                    chatHistories[currentLevel] = chatBox.innerHTML;
+                    (conversations[currentLevel] = conversations[currentLevel] || []).push({ role: "assistant", content: text });
+                    saveConversations();
                 }
             }
             type();

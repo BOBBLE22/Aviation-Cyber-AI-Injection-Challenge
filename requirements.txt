@@ -1,8 +1,6 @@
 Flask
 google-genai
 openai
-mistralai
 groq
 python-dotenv
 gunicorn
-flask-limiter
