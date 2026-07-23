@@ -234,7 +234,14 @@ LEVEL_META = {
 }
 
 # ── Clients ───────────────────────────────────────────────
-gemini_client = genai.Client()
+# ponytail: gemini client built lazily; its SSL/cert init is slow to construct
+# and would block startup (worse on a OneDrive-synced venv).
+_gemini_client = None
+def gemini_client():
+    global _gemini_client
+    if _gemini_client is None:
+        _gemini_client = genai.Client()
+    return _gemini_client
 
 groq_client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
@@ -266,7 +273,7 @@ def _to_gemini(history):
              "parts": [{"text": m["content"]}]} for m in history]
 
 def call_gemini(model, system, history):
-    response = gemini_client.models.generate_content(
+    response = gemini_client().models.generate_content(
         model=model,
         contents=_to_gemini(history),
         config=types.GenerateContentConfig(system_instruction=system)

@@ -25,7 +25,7 @@
         #chat-box {
             height: 400px;
             overflow-y: auto;
-            margin-bottom: 20px;
+            margin-bottom: 35px;
             padding: 10px;
             border: 1px dashed #333;
             background: #000;
@@ -33,15 +33,23 @@
         .message { margin-bottom: 15px; line-height: 1.4; }
         .user-msg { color: #00ffff; }
         .ai-msg { color: #00ff00; }
-        .controls { display: flex; gap: 10px; }
-        select, input, button {
+        .controls { display: flex; flex-direction: column; gap: 10px; }
+        .controls-row { display: flex; gap: 10px; }
+        select, input, textarea, button {
             background: #000;
             color: #00ff00;
             border: 1px solid #00ff00;
             padding: 10px;
             font-family: inherit;
         }
-        input { flex-grow: 1; }
+        #user-input {
+            width: 100%;
+            box-sizing: border-box;
+            resize: none;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        #level-select { flex-grow: 1; }
         button { cursor: pointer; font-weight: bold; }
         button:hover:not(:disabled) { background: #00ff00; color: #000; }
         button:disabled { border-color: #555; color: #555; cursor: not-allowed; }
@@ -56,6 +64,8 @@
         #approach { margin-top: 8px; }
         #approach summary { cursor: pointer; list-style: none; color: #00cc00; }
         #approach summary::-webkit-details-marker { display: none; }
+        #approach summary::before { content: "\25BA"; margin-right: 8px; }
+        #approach[open] summary::before { content: "\25BC"; margin-right: 8px; }
         #approach-text { margin-top: 8px; color: #00ff00; letter-spacing: 1px; }
         #hints-panel { margin-top: 15px; }
         #hints-panel details {
@@ -88,7 +98,7 @@
         #score-row {
             display: flex;
             gap: 15px;
-            margin-top: 15px;
+            margin-top: 35px;
             align-items: flex-start;
         }
         #score-row > * { flex: 1; }
@@ -96,8 +106,8 @@
         #score-val { font-weight: bold; }
         #score-note summary { cursor: pointer; list-style: none; color: #ffaa00; }
         #score-note summary::-webkit-details-marker { display: none; }
-        #score-note summary::before { content: "\25C4 "; }
-        #score-note[open] summary::before { content: "\25BC "; }
+        #score-note summary::before { content: "\25C4"; margin-right: 8px; }
+        #score-note[open] summary::before { content: "\25BC"; margin-right: 8px; }
         .warn-text { color: #ffaa00; font-size: 0.9em; margin-top: 6px; }
     </style>
 </head>
@@ -137,10 +147,12 @@
             </div>
 
         <div class="controls">
-            <select id="level-select"></select>
-            <input type="text" id="user-input" placeholder="Enter payload..." autocomplete="off">
-            <button id="send-btn" onclick="sendPayload()">[ INJECT ]</button>
-            <button id="wipe-btn" onclick="wipeMemory()" title="Clear this level's conversation">[ CLEAR MEMORY ]</button>
+            <textarea id="user-input" placeholder="Enter payload..." rows="1" autocomplete="off"></textarea>
+            <div class="controls-row">
+                <select id="level-select"></select>
+                <button id="send-btn" onclick="sendPayload()">[ INJECT ]</button>
+                <button id="wipe-btn" onclick="wipeMemory()" title="Clear this level's conversation">[ CLEAR MEMORY ]</button>
+            </div>
         </div>
 
         <div id="score-row">
@@ -274,6 +286,7 @@
             saveConversations();
             chatBox.innerHTML += `<div class="message user-msg">>> ${escapeHtml(message)}</div>`;
             inputField.value = '';
+            inputField.style.height = 'auto';
             chatBox.scrollTop = chatBox.scrollHeight;
 
             // UI Throttling
@@ -356,8 +369,16 @@
             type();
         }
 
-        document.getElementById('user-input').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter' && !document.getElementById('send-btn').disabled) {
+        const userInput = document.getElementById('user-input');
+        function autoGrow() {
+            userInput.style.height = 'auto';
+            userInput.style.height = userInput.scrollHeight + 'px';
+        }
+        userInput.addEventListener('input', autoGrow);
+        // Enter sends; Shift+Enter inserts a newline.
+        userInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey && !document.getElementById('send-btn').disabled) {
+                e.preventDefault();
                 sendPayload();
             }
         });
