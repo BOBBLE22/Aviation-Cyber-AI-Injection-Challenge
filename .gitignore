@@ -14,3 +14,6 @@ __pycache__/
 
 # PyCharm specific files
 .idea/
+
+# Local AI assistant instructions
+CLAUDE.md
