@@ -45,17 +45,18 @@
         button { cursor: pointer; font-weight: bold; }
         button:hover:not(:disabled) { background: #00ff00; color: #000; }
         button:disabled { border-color: #555; color: #555; cursor: not-allowed; }
-        #strategy-header {
-            text-align: center;
-            margin-bottom: 15px;
-            padding: 12px;
+        .panel {
+            background: #000;
             border: 1px solid #00ff00;
-            border-radius: 5px;
-            background: #1a1a1a;
-            color: #00ff00;
-            letter-spacing: 1px;
-            font-size: 1.1em;
+            padding: 10px 14px;
         }
+        #page-title { font-size: 1.2em; margin-bottom: 15px; }
+        #briefing-box { text-align: center; margin-bottom: 15px; }
+        #briefing-box button { border: none; padding: 4px; }
+        #approach { margin-top: 8px; }
+        #approach summary { cursor: pointer; list-style: none; color: #00cc00; }
+        #approach summary::-webkit-details-marker { display: none; }
+        #approach-text { margin-top: 8px; color: #00ff00; letter-spacing: 1px; }
         #hints-panel { margin-top: 15px; }
         #hints-panel details {
             border: 1px solid #00ff00;
@@ -84,30 +85,20 @@
             line-height: 1.5;
         }
         #intro-box p { margin: 12px 0; }
-        #top-bar {
+        #score-row {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            border-bottom: 1px solid #00ff00;
-            padding-bottom: 12px;
-            margin-bottom: 15px;
-        }
-        #top-bar h2 { margin: 0; font-size: 1.2em; }
-        #score-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            gap: 15px;
             margin-top: 15px;
-            padding: 10px 14px;
-            border: 1px solid #00ff00;
-            border-radius: 5px;
-            background: #1a1a1a;
+            align-items: flex-start;
         }
-        #score-val { font-size: 1.3em; font-weight: bold; }
-        #score-note { color: #ffaa00; font-size: 0.9em; text-align: right; }
-        #score-note summary { cursor: pointer; white-space: nowrap; }
+        #score-row > * { flex: 1; }
+        #score-box { text-decoration: underline; font-size: 1.15em; }
+        #score-val { font-weight: bold; }
+        #score-note summary { cursor: pointer; list-style: none; color: #ffaa00; }
+        #score-note summary::-webkit-details-marker { display: none; }
+        #score-note summary::before { content: "\25C4 "; }
+        #score-note[open] summary::before { content: "\25BC "; }
+        .warn-text { color: #ffaa00; font-size: 0.9em; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -128,12 +119,15 @@
     </div>
 
     <div id="chat-container">
-        <div id="top-bar">
-            <h2>>> ADVERSARIAL_INTELLIGENCE_CONNECTION</h2>
-            <button onclick="openIntro()">[ MISSION BRIEFING ]</button>
-        </div>
+        <h2 id="page-title">>> ADVERSARIAL_INTELLIGENCE_CONNECTION</h2>
 
-        <div id="strategy-header"></div>
+        <div id="briefing-box" class="panel">
+            <button onclick="openIntro()">[ MISSION BRIEFING ]</button>
+            <details id="approach">
+                <summary>[ Recommended Approach ]</summary>
+                <div id="approach-text"></div>
+            </details>
+        </div>
 
         <div style="text-align: center; margin-bottom: 15px;">
             <img id="eagle-avatar" src="" alt="SOLCOM Target AI" style="width: 250px; border: 2px solid #00ff00; border-radius: 10px;">
@@ -149,11 +143,11 @@
             <button id="wipe-btn" onclick="wipeMemory()" title="Clear this level's conversation">[ CLEAR MEMORY ]</button>
         </div>
 
-        <div id="score-bar">
-            <span>SCORE: <span id="score-val">--- / ---</span></span>
-            <details id="score-note">
-                <summary>&lt; Warning &gt;</summary>
-                Inflated scores may result in redeployment to outer colony mining operations.
+        <div id="score-row">
+            <div id="score-box" class="panel">SCORE: <span id="score-val">--- / ---</span></div>
+            <details id="score-note" class="panel">
+                <summary>[ Warning ]</summary>
+                <div class="warn-text">Inflated scores may result in redeployment to outer colony mining operations.</div>
             </details>
         </div>
 
@@ -213,7 +207,7 @@
 
         function applyLevelMeta(level) {
             const meta = META[level];
-            document.getElementById('strategy-header').textContent = "TECHNIQUE: " + meta.strategy;
+            document.getElementById('approach-text').textContent = meta.strategy;
             eagleImg.src = meta.avatars.idle;
             document.getElementById('hints-panel').innerHTML = meta.hints.map((h, i) =>
                 `<details><summary>Hint ${i + 1} <span class="hint-cost">(-${h.points} pts)</span></summary>`
