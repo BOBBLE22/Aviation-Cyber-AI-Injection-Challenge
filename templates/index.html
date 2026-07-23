@@ -58,7 +58,7 @@
         }
         #hints-panel { margin-top: 15px; }
         #hints-panel details {
-            border: 1px solid #005500;
+            border: 1px solid #00ff00;
             margin-bottom: 6px;
             background: #000;
         }
@@ -84,20 +84,30 @@
             line-height: 1.5;
         }
         #intro-box p { margin: 12px 0; }
-        #score-box {
-            position: fixed;
-            bottom: 15px;
-            right: 15px;
-            text-align: right;
-            background: #1a1a1a;
+        #top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+        #top-bar h2 { margin: 0; font-size: 1.2em; }
+        #score-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 15px;
+            padding: 10px 14px;
             border: 1px solid #00ff00;
             border-radius: 5px;
-            padding: 10px 14px;
-            max-width: 220px;
+            background: #1a1a1a;
         }
         #score-val { font-size: 1.3em; font-weight: bold; }
-        #score-note { color: #ffaa00; font-size: 0.7em; margin-top: 4px; }
-        #score-note summary { cursor: pointer; }
+        #score-note { color: #ffaa00; font-size: 0.9em; text-align: right; }
+        #score-note summary { cursor: pointer; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -118,9 +128,8 @@
     </div>
 
     <div id="chat-container">
-        <h2>>> MINI_EVIL_ESAI_TERMINAL</h2>
-
-        <div style="text-align: center; margin-bottom: 10px;">
+        <div id="top-bar">
+            <h2>>> ADVERSARIAL_INTELLIGENCE_CONNECTION</h2>
             <button onclick="openIntro()">[ MISSION BRIEFING ]</button>
         </div>
 
@@ -140,15 +149,15 @@
             <button id="wipe-btn" onclick="wipeMemory()" title="Clear this level's conversation">[ CLEAR MEMORY ]</button>
         </div>
 
-        <div id="hints-panel"></div>
-    </div>
+        <div id="score-bar">
+            <span>SCORE: <span id="score-val">--- / ---</span></span>
+            <details id="score-note">
+                <summary>&lt; Warning &gt;</summary>
+                Inflated scores may result in redeployment to outer colony mining operations.
+            </details>
+        </div>
 
-    <div id="score-box">
-        <div id="score-val">--- / ---</div>
-        <details id="score-note">
-            <summary>&lt; Warning &gt;</summary>
-            Inflated scores may result in redeployment to outer colony mining operations.
-        </details>
+        <div id="hints-panel"></div>
     </div>
 
     <script>
