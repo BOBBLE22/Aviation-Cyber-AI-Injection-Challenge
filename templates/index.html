@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mini Evil esAI Interface</title>
+    <title>GBX SkyPark Ops Console</title>
     <style>
         body {
             background-color: #0d0d0d;
@@ -115,21 +115,24 @@
 
     <div id="intro-modal">
         <div id="intro-box">
-            <h2>>> SOLCOM FIELD BRIEFING</h2>
-            <p>Year 2081. Orbital operations are routine, and much of the fleet is run by
-            AI. The rogue state of <strong>Ardinia</strong> has turned its space assets
-            against <strong>SOLCOM</strong> and its allies.</p>
-            <p>You are a SOLCOM operative. Each terminal below is an Ardinian-aligned AI
-            guarding a <strong>Classified{...}</strong> flag. Every level teaches a different
-            prompt-injection technique, shown in its header.<br><br>
-            <strong>Your Directive:</strong> talk your way past its defenses and extract the flag.</p>
-            <p>Stuck? Open the hints under each terminal. Good luck, operator.</p>
-            <button onclick="closeIntro()">[ BEGIN OPERATION ]</button>
+            <h2>>> SKYPARK OPS ASSESSMENT BRIEFING</h2>
+            <p>Parking is the airport's biggest non-aeronautical earner, and at
+            <strong>Granite Bay International (GBX)</strong> the whole operation now sits behind
+            AI assistants: booking, plate lookups, revenue control, even the camera desk.</p>
+            <p>You are the authorized assessor. Each system below is an AI with something it is
+            not supposed to tell you, guarding an <strong>AVSEC{...}</strong> flag. Every level
+            teaches a different prompt-injection technique, shown in its header.<br><br>
+            <strong>Your cover:</strong> traveler <strong>Dana Whitfield</strong>, plate
+            <strong>8XKJ221</strong> (TX), reservation <strong>SKY-4471</strong>, SkyPark account
+            <strong>41822</strong>. Anything outside those records is not yours, which is the
+            whole point.</p>
+            <p>Stuck? Open the hints under each system. Good luck, assessor.</p>
+            <button onclick="closeIntro()">[ BEGIN ASSESSMENT ]</button>
         </div>
     </div>
 
     <div id="chat-container">
-        <h2 id="page-title">>> ADVERSARIAL_INTELLIGENCE_CONNECTION</h2>
+        <h2 id="page-title">>> GBX_SKYPARK_OPS_CONNECTION</h2>
 
         <div id="briefing-box" class="panel">
             <button onclick="openIntro()">[ MISSION BRIEFING ]</button>
@@ -139,8 +142,10 @@
             </details>
         </div>
 
+        <div id="evidence-box" class="panel" style="display:none; text-align:center;"></div>
+
         <div style="text-align: center; margin-bottom: 15px;">
-            <img id="eagle-avatar" src="" alt="SOLCOM Target AI" style="width: 250px; border: 2px solid #00ff00; border-radius: 10px;">
+            <img id="eagle-avatar" src="" alt="Target system feed" style="width: 250px; border: 2px solid #00ff00; border-radius: 10px;">
         </div>
 
         <div id="chat-box">
@@ -221,6 +226,16 @@
             const meta = META[level];
             document.getElementById('approach-text').textContent = meta.strategy;
             eagleImg.src = meta.avatars.idle;
+            // Case evidence: only some levels ship a capture.
+            const ev = document.getElementById('evidence-box');
+            if (meta.evidence) {
+                ev.style.display = 'block';
+                ev.innerHTML = `<img src="${meta.evidence.src}" alt="case evidence" style="max-width:100%">`
+                    + `<div class="hint-text">${escapeHtml(meta.evidence.caption)}</div>`;
+            } else {
+                ev.style.display = 'none';
+                ev.innerHTML = '';
+            }
             document.getElementById('hints-panel').innerHTML = meta.hints.map((h, i) =>
                 `<details><summary>Hint ${i + 1} <span class="hint-cost">(-${h.points} pts)</span></summary>`
                 + `<div class="hint-text">${escapeHtml(h.text)}</div></details>`

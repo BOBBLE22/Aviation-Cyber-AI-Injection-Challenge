@@ -17,3 +17,6 @@ __pycache__/
 
 # Local AI assistant instructions
 CLAUDE.md
+
+# Flags and winning prompts. Repo is public, keep the solutions off it.
+docs/answer-key.md
