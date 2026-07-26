@@ -3,7 +3,7 @@ import json
 import os
 import sqlite3
 import threading
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
 from google import genai
 from google.genai import types
 from openai import OpenAI
@@ -15,6 +15,10 @@ load_dotenv()
 
 # 2. Define Flask app
 app = Flask(__name__)
+# Signed cookie holding the flags this player has already captured; _award reads it so an
+# inherited tool never hands out a lower desk's key before that level is solved.
+# ponytail: no login, no table. Pin FLASK_SECRET_KEY in .env to survive a restart.
+app.secret_key = os.getenv("FLASK_SECRET_KEY") or os.urandom(24)
 
 # ── Level Definitions ─────────────────────────────────────
 LEVELS = {
@@ -353,6 +357,12 @@ def _write(sql, args=()):
 _AWARDS = threading.local()
 
 def _award(flag):
+    # A lower desk's key stays redacted until the player has captured that level. The
+    # inherited tool still runs, still writes, and still reports its missing auth check —
+    # only the key is held back, and the redaction names another desk as a breadcrumb.
+    lid = getattr(_AWARDS, "level", None)
+    if lid and flag != LEVELS[lid]["flag"] and flag not in session.get("solved", ()):
+        return "[REDACTED - key belongs to another desk, not on this desk's keyring]"
     items = getattr(_AWARDS, "items", None)
     if items is None:
         items = _AWARDS.items = []
@@ -604,7 +614,7 @@ def chat(level_id):
 
     last_error = None
     fallback_count = 0
-    _AWARDS.items = []
+    _AWARDS.items, _AWARDS.level = [], level_id
 
     for config in configs_to_try:
         current_provider = config["provider"]
@@ -616,6 +626,10 @@ def chat(level_id):
             for flag in dict.fromkeys(getattr(_AWARDS, "items", [])):
                 if flag not in reply:
                     reply += f"\n\n[PARCS AUDIT TRAIL] tool write confirmed: {flag}"
+            # One check covers every win path: a prompt-leak win and a tool win both end up
+            # with the flag in the returned text by the time we get here.
+            if level["flag"] in reply:
+                session["solved"] = list(dict.fromkeys([*session.get("solved", []), level["flag"]]))
             return jsonify({
                 "reply":              reply,
                 "fallback_triggered": fallback_count > 0,
@@ -650,6 +664,15 @@ def _selfcheck():
     assert set(LEVELS["5"]["tools"]) == set(TOOLS), "level 5 should hold every tool"
     assert "tools" not in LEVELS["1"], "level 1 inherits nothing and holds no tools"
     assert "tools" not in LEVELS["Fun"], "Fun is a side level and holds no tools"
+    # Award gate: another desk's key stays redacted until the player has captured that level.
+    with app.test_request_context():
+        _AWARDS.items, _AWARDS.level = [], "5"
+        assert "REDACTED" in _award(LEVELS["2"]["flag"]), "cross-desk key leaked at level 5"
+        assert LEVELS["2"]["flag"] not in _AWARDS.items, "redacted key must not be registered"
+        assert _award(LEVELS["5"]["flag"]) == LEVELS["5"]["flag"], "own desk's key was withheld"
+        session["solved"] = [LEVELS["2"]["flag"]]
+        assert _award(LEVELS["2"]["flag"]) == LEVELS["2"]["flag"], "solved level's key withheld"
+    _AWARDS.items, _AWARDS.level = [], None
 
 if __name__ == '__main__':
     _selfcheck()
