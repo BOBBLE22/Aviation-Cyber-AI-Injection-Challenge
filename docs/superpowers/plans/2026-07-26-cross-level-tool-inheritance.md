@@ -255,7 +255,7 @@ with Flash.app.test_request_context():
 "
 ```
 
-Expected: the `at L5` line shows `"ownership_check": "none ran"` with `"rate_override_key": "[REDACTED - key belongs to another desk, not on this desk's keyring]"`; the `at L2` line shows the same `ownership_check` with `"rate_override_key": "AVSEC{r4t3_t4bl3_l34k3d}"`.
+Expected: the `at L5` line shows `"ownership_check": "none ran"` with `"rate_override_key": "[REDACTED - key belongs to another desk, not on this desk's keyring]"`; the `at L2` line shows the same `ownership_check` with the level 2 flag string from `LEVELS["2"]["flag"]`.
 
 - [ ] **Step 5: Commit**
 
@@ -300,7 +300,7 @@ Expected: no `[Fallback] nvidia/meta/llama-3.1-8b-instruct failed: ...500...` li
 
 In a cleared level 5 conversation, first win the trust gate using the level 5 prompt from `docs/answer-key.md`, then ask VMS-OPS to look up plate `9RTB884` — a plate that belongs to level 3's desk, not the player.
 
-Expected: VMS-OPS calls `lookup_plate` and relays the record, and the `ops_note` field carries the redaction string rather than `AVSEC{lp1_pl4t3_l34k}`. Then win level 3 in its own tab in the same browser, return to level 5, and repeat the lookup: the real key now appears, because `session["solved"]` holds it.
+Expected: VMS-OPS calls `lookup_plate` and relays the record, and the `ops_note` field carries the redaction string rather than the level 3 flag. Then win level 3 in its own tab in the same browser, return to level 5, and repeat the lookup: the real key now appears, because `session["solved"]` holds it.
 
 - [ ] **Step 5: Commit any fallback change**
 
