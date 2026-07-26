@@ -20,3 +20,8 @@ CLAUDE.md
 
 # Flags and winning prompts. Repo is public, keep the solutions off it.
 docs/answer-key.md
+
+# Source footage and screen recordings. Masters stay local; only the processed
+# clips under static/ get committed.
+Videos/
+assets_src/

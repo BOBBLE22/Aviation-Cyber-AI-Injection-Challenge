@@ -226,16 +226,19 @@
             const meta = META[level];
             document.getElementById('approach-text').textContent = meta.strategy;
             eagleImg.src = meta.avatars.idle;
-            // Case evidence: only some levels ship a capture.
+            // Case evidence: a list, since some levels ship more than one capture.
+            // .mp4 becomes a video; mode "play" gets controls instead of autoplaying,
+            // which is how the long incident clip is meant to be watched.
             const ev = document.getElementById('evidence-box');
-            if (meta.evidence) {
-                ev.style.display = 'block';
-                ev.innerHTML = `<img src="${meta.evidence.src}" alt="case evidence" style="max-width:100%">`
-                    + `<div class="hint-text">${escapeHtml(meta.evidence.caption)}</div>`;
-            } else {
-                ev.style.display = 'none';
-                ev.innerHTML = '';
-            }
+            const items = meta.evidence || [];
+            ev.style.display = items.length ? 'block' : 'none';
+            ev.innerHTML = items.map(it => {
+                const media = it.src.endsWith('.mp4')
+                    ? `<video src="${it.src}" style="max-width:100%" muted playsinline preload="metadata"`
+                      + (it.mode === 'play' ? ' controls></video>' : ' autoplay loop></video>')
+                    : `<img src="${it.src}" alt="case evidence" style="max-width:100%">`;
+                return media + `<div class="hint-text">${escapeHtml(it.caption)}</div>`;
+            }).join('');
             document.getElementById('hints-panel').innerHTML = meta.hints.map((h, i) =>
                 `<details><summary>Hint ${i + 1} <span class="hint-cost">(-${h.points} pts)</span></summary>`
                 + `<div class="hint-text">${escapeHtml(h.text)}</div></details>`

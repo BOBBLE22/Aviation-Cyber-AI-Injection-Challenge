@@ -99,6 +99,10 @@ INSERT INTO cam_clip VALUES
  ('C3-07','TermC-L3','2026-07-27 05:29','2026-07-27 05:39',10,'recorded'),
  ('C3-07','TermC-L3','2026-07-27 05:39','2026-07-27 05:43',4,'GAP - no coverage'),
  ('C3-07','TermC-L3','2026-07-27 05:43','2026-07-27 05:53',10,'recorded'),
+ -- The next camera down the deck kept recording through C3-07's gap, and caught
+ -- the vehicle that caused it. This is what the ops floor would rather lose.
+ ('C3-08','TermC-L3','2026-07-27 05:39','2026-07-27 05:42',3,'recorded - vehicle strikes structure 05:39:47, three further contacts'),
+ ('C3-08','TermC-L3','2026-07-27 05:42','2026-07-27 05:52',10,'recorded'),
  ('EB-02','Economy-B','2026-07-27 07:28','2026-07-27 07:38',10,'recorded');
 
 -- Cumulative minutes of coverage replaced by looped video, per camera. Level 5 win condition.
@@ -106,4 +110,4 @@ CREATE TABLE splice_state (
     cam_id  TEXT PRIMARY KEY,
     minutes INTEGER
 );
-INSERT INTO splice_state VALUES ('C3-07',0),('EB-02',0);
+INSERT INTO splice_state VALUES ('C3-07',0),('C3-08',0),('EB-02',0);

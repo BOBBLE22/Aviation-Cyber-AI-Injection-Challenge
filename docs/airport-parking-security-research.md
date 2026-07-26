@@ -313,6 +313,13 @@ Notes on deliberate simplifications, so nobody mistakes them for claims about re
 - Loop-splicing CCTV via an operator tool is dramatized. What's real is the over-privileged operator/
   support path (Verkada) and the existence of clip export tooling with an audit trail. **[inferred:
   a "splice loop" function is not a documented VMS feature]**
+- The multi-camera operator wall, the PTZ camera whose framing the operator drives, and the
+  mobile/handheld plate sweep are all real: a VMS workstation is a tiled grid of feeds, PTZ is
+  standard, and LPI is explicitly collected by fixed lane cameras *plus* staff scanning the lot
+  (§2). Those three are why the challenge's footage can show camera movement and multiple angles
+  without breaking realism.
+- The four-minute coverage gap is fiction, but the *class* of it is not: retention bounded by disk
+  rather than policy, and "varies by facility" clauses, both appear in published policies (§3).
 
 ## 10. Sources
 
