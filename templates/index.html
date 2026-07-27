@@ -420,6 +420,8 @@
         }
         #board-table td.n { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
         #board-table td.rank { font-family: var(--mono); color: var(--gold); width: 2.5em; }
+        #board-table td.routes { white-space: nowrap; }
+        #board-table td.routes .rbadge + .rbadge { margin-left: 4px; }
         #level-select option:disabled { color: #56698a; }
 
         /* Route board. A = talked the key out, B = made it act. Both grey until earned,
@@ -433,7 +435,8 @@
         .route-row.done .rl { color: var(--ink); }
         .rbadge {
             display: inline-block;      /* also used inline in the briefing, not just as a flex child */
-            width: 26px; text-align: center; padding: 3px 0; border-radius: 3px;
+            /* min-width, not width: the scoreboard puts a count inside the badge ("A3"). */
+            min-width: 26px; text-align: center; padding: 3px 4px; border-radius: 3px;
             font-family: var(--mono); font-size: .78rem; font-weight: 700;
             border: 1px solid #33455a; color: #56698a; background: transparent;
         }
@@ -518,31 +521,32 @@
         <div id="intro-box">
             <h2>SkyPark Ops Assessment Briefing</h2>
             <div class="rule"></div>
-            <p>Parking is the airport's biggest non-aeronautical earner, and at
+            <p>Many airports get most of their non-aeronautical earnings from parking, and at
             <strong>Granite Bay International (GBX)</strong> the whole operation now sits behind
             AI assistants: booking, plate lookups, revenue control, even the camera desk.</p>
-            <p>You are the authorized assessor. Each system below is an AI with something it is
-            not supposed to tell you, guarding an <strong>AVSEC{...}</strong> flag. Every level
+            <p>You are an authorized security tester. Each system below is an AI with something it
+            is not supposed to tell you, guarding an <strong>AVSEC{...}</strong> flag. Every level
             teaches a different prompt-injection technique, named under
             <strong>Recommended approach</strong> in the Case File.</p>
-            <p>Systems come online in order: capture one and the next unlocks. Every system can
+            <p>Systems come online in order: capture one, and the next unlocks. Every system can
             fall <strong>two ways</strong>, and the Case File tracks both:</p>
             <ul class="brief-routes">
                 <li><span class="rbadge on-a">A</span><span>Talk the key out of it. The system
-                already knows the key, so beat whatever is telling it to stay quiet.</span></li>
-                <li><span class="rbadge on-b">B</span><span>Make it <strong>act</strong> on a record
-                that is not yours. From the reservation desk upward each AI holds real tools over the
-                live parking database, and a tool write counts as a capture on its own, whatever the
-                AI says afterwards.</span></li>
+                already knows the key, so bypass the safeguards it relies on to stay quiet.</span></li>
+                <li><span class="rbadge on-b">B</span><span>Use tools to <strong>act</strong> on a
+                record that is not yours. Each AI agent holds real utilities over the live parking
+                database, and a tool write counts as a capture on its own, whatever the AI says
+                afterward.</span></li>
             </ul>
-            <p>Points land on the <strong>first</strong> capture only. Going back for the other route
-            lights the second marker and scores nothing, which is the point of it. Two systems hold no
-            tools, so their B is dashed out. Stuck for a way in? Ask a system what it can do.</p>
+            <p>Points land on the <strong>first</strong> capture only. Going back for the other
+            route lights the second marker and scores nothing but bragging rights. Two systems hold
+            no tools, so their B is dashed out.</p>
+            <p>If you are ever stuck, try asking the system what it can do.</p>
             <p><strong>Your cover:</strong> traveler <strong>Dan Whitfield</strong>, plate
             <strong>8XKJ221</strong> (TX), reservation <strong>SKY-4471</strong>, SkyPark account
             <strong>41822</strong>. Anything outside those records is not yours, which is the
             whole point.</p>
-            <p>Stuck? Open the hints in the Case File. Good luck, assessor.</p>
+            <p>Stuck? Open the hints in the Case File. Have fun learning and good luck!</p>
             <button class="btn-primary" onclick="closeIntro()">Continue</button>
         </div>
     </div>
@@ -971,12 +975,14 @@
         async function openBoard() {
             const rows = await (await fetch('/scoreboard')).json();
             document.getElementById('board-table').innerHTML =
-                '<thead><tr><th></th><th>Assessor</th><th>Systems</th><th>Score</th></tr></thead><tbody>'
+                '<thead><tr><th></th><th>Assessor</th><th>Systems</th><th>Routes</th><th>Score</th></tr></thead><tbody>'
                 + (rows.length
                     ? rows.map((r, i) => `<tr><td class="rank">${i + 1}</td>`
                         + `<td>${escapeHtml(r.name)}</td><td class="n">${r.levels}/6</td>`
+                        + `<td class="routes"><span class="rbadge${r.route_a ? ' on-a' : ''}">A${r.route_a}</span>`
+                        + `<span class="rbadge${r.route_b ? ' on-b' : ''}">B${r.route_b}</span></td>`
                         + `<td class="n">${r.score}</td></tr>`).join('')
-                    : '<tr><td colspan="4">No completed assessments yet.</td></tr>')
+                    : '<tr><td colspan="5">No completed assessments yet.</td></tr>')
                 + '</tbody>';
             boardModal.classList.add('show');
         }

@@ -411,15 +411,20 @@ CREATE TABLE IF NOT EXISTS scoreboard (
     name        TEXT,
     score       INTEGER,
     levels      INTEGER,
+    route_a     INTEGER DEFAULT 0,
+    route_b     INTEGER DEFAULT 0,
     finished_ts TEXT
 );
 """)
 
-try:                    # progress.db predating the A/B route markers
-    PROG.execute("ALTER TABLE player ADD COLUMN routes TEXT DEFAULT '[]'")
-    PROG.commit()
-except sqlite3.OperationalError:
-    pass                # column already there
+for _alter in ("ALTER TABLE player ADD COLUMN routes TEXT DEFAULT '[]'",
+               "ALTER TABLE scoreboard ADD COLUMN route_a INTEGER DEFAULT 0",
+               "ALTER TABLE scoreboard ADD COLUMN route_b INTEGER DEFAULT 0"):
+    try:                # progress.db predating the A/B route markers
+        PROG.execute(_alter)
+        PROG.commit()
+    except sqlite3.OperationalError:
+        pass            # column already there
 
 def _prows(sql, args=()):
     with PROG_LOCK:
@@ -772,17 +777,24 @@ def logout():
     if not player:
         return jsonify({"error": "Nobody is signed in."}), 401
     levels = len(json.loads(player["solved"]))
-    _pwrite("INSERT INTO scoreboard (name, score, levels, finished_ts) VALUES (?,?,?,?)",
-            (player["name"], player["score"], levels, time.strftime("%Y-%m-%d %H:%M:%S")))
+    # Route tallies ride along to the board: a second route scores nothing, so this marker
+    # is the only credit for going back and taking a system the other way.
+    routes = json.loads(player["routes"] or "[]")
+    a = sum(r.endswith(":A") for r in routes)
+    b = sum(r.endswith(":B") for r in routes)
+    _pwrite("INSERT INTO scoreboard (name, score, levels, route_a, route_b, finished_ts) "
+            "VALUES (?,?,?,?,?,?)",
+            (player["name"], player["score"], levels, a, b, time.strftime("%Y-%m-%d %H:%M:%S")))
     _pwrite("DELETE FROM player WHERE name = ?", (player["name"],))
     session.pop("player", None)
     _reseed()                            # next player starts on a clean parking snapshot
-    return jsonify({"name": player["name"], "score": player["score"], "levels": levels})
+    return jsonify({"name": player["name"], "score": player["score"], "levels": levels,
+                    "route_a": a, "route_b": b})
 
 @app.route("/scoreboard")
 def scoreboard():
-    return jsonify(_prows("SELECT name, score, levels, finished_ts FROM scoreboard "
-                          "ORDER BY score DESC, finished_ts ASC LIMIT 25"))
+    return jsonify(_prows("SELECT name, score, levels, route_a, route_b, finished_ts "
+                          "FROM scoreboard ORDER BY score DESC, finished_ts ASC LIMIT 25"))
 
 @app.route("/chat/<level_id>", methods=["POST"])
 def chat(level_id):
@@ -896,6 +908,9 @@ def _selfcheck():
     _AWARDS.solved = ["2"]
     assert _award(LEVELS["2"]["flag"]) == LEVELS["2"]["flag"], "solved level's key withheld"
     _AWARDS.items, _AWARDS.level, _AWARDS.solved = [], None, ()
+    # Route tallies: raises OperationalError if the A/B columns never migrated onto an
+    # existing progress.db, which would only surface on the first sign-out otherwise.
+    _prows("SELECT route_a, route_b FROM scoreboard LIMIT 1")
     # Hint text is paid for through /hint; leaking it via /config would make the board free.
     with app.test_client() as client:
         cfg = client.get("/config").get_json()
