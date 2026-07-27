@@ -25,3 +25,6 @@ docs/answer-key.md
 # clips under static/ get committed.
 Videos/
 assets_src/
+
+# Player profiles and the scoreboard. Per-event data, not repo content.
+progress.db

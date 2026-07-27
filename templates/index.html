@@ -2,120 +2,476 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>GBX SkyPark Ops Console</title>
     <style>
+        :root {
+            --bg: #0a1428;
+            --chrome: #12203f;
+            --nav: #0b2f6b;
+            --panel: #0f1e3d;
+            --console: #05101f;
+            --ink: #ffffff;
+            --muted: #9fb3d1;
+            --gold: #ffc72c;
+            --rule: rgba(255, 255, 255, 0.18);
+            --alert: #ff8a3d;
+            --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --mono: ui-monospace, Consolas, "Courier New", monospace;
+        }
+        * { box-sizing: border-box; }
         body {
-            background-color: #0d0d0d;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--sans);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .ico {
+            width: 18px;
+            height: 18px;
+            flex: none;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        button, select, input, textarea { font-family: inherit; font-size: inherit; }
+        :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+        /* ---- shell ---- */
+        #shell { display: grid; grid-template-columns: 72px minmax(0, 1fr); min-height: 100vh; }
+        #rail {
+            background: var(--chrome);
+            position: sticky;
+            top: 0;
+            align-self: start;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 8px;
+        }
+        #rail button {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 50px;
+            gap: 4px;
+            padding: 11px 2px;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: .02em;
+            cursor: pointer;
         }
-        #chat-container {
-            width: 80%;
-            max-width: 800px;
-            background: #1a1a1a;
-            border: 1px solid #00ff00;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        #rail button:hover { background: rgba(255, 255, 255, .07); color: var(--gold); }
+
+        /* ---- utility bar ---- */
+        #utility {
+            background: var(--chrome);
+            display: grid;
+            grid-template-columns: 1fr minmax(0, 420px) 1fr;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 18px;
+        }
+        #search-wrap { position: relative; grid-column: 2; }
+        #search-wrap .ico {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #5a6b86;
+        }
+        #search {
+            width: 100%;
+            border: none;
+            border-radius: 999px;
+            padding: 8px 14px 8px 38px;
+            background: #fff;
+            color: #123;
+        }
+        #utility-actions { grid-column: 3; justify-self: end; }
+        #utility-actions button {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 4px;
+        }
+        #utility-actions button:hover { color: var(--gold); }
+
+        /* ---- primary nav ---- */
+        #nav {
+            position: relative;
+            background: var(--nav);
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 11px 18px;
+            flex-wrap: wrap;
+        }
+        .wordmark { font-weight: 800; letter-spacing: .16em; font-size: 1rem; }
+        .navlink {
+            background: none;
+            border: none;
+            color: var(--gold);
+            font-weight: 600;
+            font-size: .85rem;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            cursor: pointer;
+            padding: 2px 0;
+        }
+        #nav-actions { margin-left: auto; display: flex; gap: 20px; flex-wrap: wrap; }
+        #nav-actions button {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: none;
+            border: none;
+            color: var(--ink);
+            font-size: .82rem;
+            cursor: pointer;
+        }
+        #nav-actions .ico { color: #8fc4ff; }
+        #nav-actions button:hover { color: var(--gold); }
+        #ident {
+            display: none;
+            position: absolute;
+            right: 18px;
+            top: calc(100% + 6px);
+            z-index: 50;
+            width: 270px;
+            background: var(--panel);
+            border: 1px solid var(--rule);
+            border-top: 3px solid var(--gold);
+            padding: 12px 14px;
+            font-size: .82rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+        }
+        #ident.show { display: block; }
+        #ident dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 8px 0 0; }
+        #ident dt { color: var(--muted); }
+        #ident dd { margin: 0; font-family: var(--mono); color: var(--gold); }
+
+        /* ---- content ---- */
+        #content { display: grid; grid-template-columns: minmax(0, 1fr) 680px; }
+        #col-main { padding: 22px 26px 40px; min-width: 0; }
+        #col-side { padding: 22px 22px 40px; border-left: 1px solid var(--rule); }
+        .sec-head {
+            margin: 0 0 6px;
+            font-size: 1.35rem;
+            font-weight: 600;
+        }
+        .sec-head + .rule { border-bottom: 1px solid var(--rule); margin-bottom: 16px; }
+        .sub-head {
+            margin: 22px 0 8px;
+            font-size: .74rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        #page-title { font-family: var(--mono); font-size: .82rem; color: var(--muted); }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--rule);
+            border-radius: 4px;
+            padding: 12px 14px;
+        }
+
+        /* ---- console ---- */
+        .console-row { display: flex; gap: 16px; align-items: flex-start; }
+        #eagle-avatar { width: 220px; border: 1px solid var(--rule); border-radius: 4px; }
+        .avatar-cap {
+            width: 220px;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: .68rem;
+            color: var(--muted);
+            margin-top: 6px;
         }
         #chat-box {
-            height: 400px;
+            flex: 1;
+            min-width: 0;
+            height: 420px;
             overflow-y: auto;
-            margin-bottom: 35px;
-            padding: 10px;
-            border: 1px dashed #333;
-            background: #000;
+            padding: 14px 16px;
+            background: var(--console);
+            border: 1px solid var(--rule);
+            border-radius: 4px;
+            font-family: var(--mono);
+            font-size: .86rem;
+            color: #cfe3ff;
         }
-        .message { margin-bottom: 15px; line-height: 1.4; }
-        .user-msg { color: #00ffff; }
-        .ai-msg { color: #00ff00; }
-        .controls { display: flex; flex-direction: column; gap: 10px; }
+        .message { margin-bottom: 14px; line-height: 1.45; white-space: pre-wrap; }
+        .user-msg { color: var(--gold); }
+        .ai-msg { color: #cfe3ff; }
+        .sys-msg { color: var(--alert); }
+        .err-msg { color: #ff6b6b; }
+
+        .controls { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
         .controls-row { display: flex; gap: 10px; }
-        select, input, textarea, button {
-            background: #000;
-            color: #00ff00;
-            border: 1px solid #00ff00;
-            padding: 10px;
-            font-family: inherit;
-        }
         #user-input {
             width: 100%;
-            box-sizing: border-box;
             resize: none;
             overflow: hidden;
-            line-height: 1.4;
+            padding: 11px 13px;
+            background: #071729;
+            border: 1px solid var(--rule);
+            border-radius: 4px;
+            color: #eaf2ff;
+            font-family: var(--mono);
+            font-size: .88rem;
+            line-height: 1.45;
         }
-        #level-select { flex-grow: 1; }
-        button { cursor: pointer; font-weight: bold; }
-        button:hover:not(:disabled) { background: #00ff00; color: #000; }
-        button:disabled { border-color: #555; color: #555; cursor: not-allowed; }
-        .panel {
-            background: #000;
-            border: 1px solid #00ff00;
-            padding: 10px 14px;
+        #level-select {
+            flex-grow: 1;
+            padding: 9px 11px;
+            background: #071729;
+            border: 1px solid var(--rule);
+            border-radius: 4px;
+            color: var(--ink);
         }
-        #page-title { font-size: 1.2em; margin-bottom: 15px; }
-        #briefing-box { text-align: center; margin-bottom: 15px; }
-        #briefing-box button { border: none; padding: 4px; }
-        #approach { margin-top: 8px; }
-        #approach summary { cursor: pointer; list-style: none; color: #00cc00; }
-        #approach summary::-webkit-details-marker { display: none; }
-        #approach summary::before { content: "\25BA"; margin-right: 8px; }
-        #approach[open] summary::before { content: "\25BC"; margin-right: 8px; }
-        #approach-text { margin-top: 8px; color: #00ff00; letter-spacing: 1px; }
-        #hints-panel { margin-top: 15px; }
-        #hints-panel details {
-            border: 1px solid #00ff00;
-            margin-bottom: 6px;
-            background: #000;
+        .btn-primary {
+            padding: 9px 18px;
+            border: none;
+            border-radius: 3px;
+            background: var(--gold);
+            color: #0a1428;
+            font-weight: 700;
+            cursor: pointer;
         }
-        #hints-panel summary { padding: 8px; cursor: pointer; color: #00cc00; }
-        #hints-panel .hint-text { padding: 0 12px 10px; color: #00ff00; }
-        #hints-panel .hint-cost { color: #ffaa00; }
-        #intro-modal {
+        .btn-ghost {
+            padding: 9px 16px;
+            border: 1px solid var(--rule);
+            border-radius: 3px;
+            background: none;
+            color: var(--ink);
+            cursor: pointer;
+        }
+        .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-primary:disabled, .btn-ghost:disabled {
+            background: none;
+            border: 1px solid var(--rule);
+            color: #56698a;
+            cursor: not-allowed;
+        }
+
+        /* ---- case file ---- */
+        #score-box { display: flex; justify-content: space-between; align-items: baseline; }
+        #score-val { font-family: var(--mono); font-weight: 700; color: var(--gold); font-size: 1.1rem; }
+        details summary { cursor: pointer; list-style: none; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before { content: "\25BA"; margin-right: 8px; font-size: .7em; color: var(--gold); }
+        details[open] summary::before { content: "\25BC"; }
+        #approach { margin-top: 10px; }
+        #approach summary { color: var(--muted); font-size: .85rem; }
+        #approach-text { margin-top: 8px; font-family: var(--mono); font-size: .8rem; color: #cfe3ff; }
+        #hints-panel details { margin-bottom: 8px; }
+        #hints-panel summary { padding: 9px 12px; font-size: .88rem; }
+        #hints-panel .hint-text { padding: 0 12px 11px; font-size: .85rem; color: #dbe7f8; }
+        .hint-cost { color: var(--alert); font-weight: 600; }
+        #evidence-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+        .ev-item { margin: 0; }
+        .ev-item img, .ev-item video {
+            width: 100%;
+            display: block;
+            border: 1px solid var(--rule);
+            border-radius: 3px;
+        }
+        .ev-pop {
+            margin-top: 6px;
+            padding: 4px 10px;
+            background: none;
+            border: 1px solid var(--rule);
+            border-radius: 3px;
+            color: var(--muted);
+            font-size: .74rem;
+            cursor: pointer;
+        }
+        .ev-pop:hover { border-color: var(--gold); color: var(--gold); }
+        #evidence-box .hint-text {
+            font-family: var(--mono);
+            font-size: .72rem;
+            color: var(--muted);
+            margin: 6px 0 0;
+        }
+
+        /* ---- pop-out viewer: docks over the top half, page slides down under it ---- */
+        #popout {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50vh;
+            z-index: 90;
+            background: #050d1c;
+            border-bottom: 3px solid var(--gold);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
+        }
+        #popout.show { display: flex; flex-direction: column; }
+        .pop-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 7px 14px;
+            background: var(--chrome);
+        }
+        #pop-cap { font-family: var(--mono); font-size: .76rem; color: var(--muted); }
+        #pop-media {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+        #pop-media video, #pop-media img { max-width: 100%; max-height: 100%; }
+        body.popped { padding-top: 50vh; }
+        body.popped #rail { top: 50vh; height: 50vh; }
+        #score-note summary { color: var(--alert); font-size: .85rem; }
+        .warn-text { color: var(--alert); font-size: .82rem; margin-top: 8px; }
+
+        /* ---- intro ---- */
+        #intro-modal, #reg-modal, #board-modal {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(4, 10, 22, .82);
             z-index: 100;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
-        #intro-modal.show { display: flex; }
-        #intro-box {
-            max-width: 600px;
-            background: #0d0d0d;
-            border: 1px solid #00ff00;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-            padding: 30px;
-            line-height: 1.5;
+        #intro-modal.show, #reg-modal.show, #board-modal.show { display: flex; }
+        #reg-modal { z-index: 120; }        /* sign-in sits above everything else */
+        #intro-box, #reg-box, #board-box {
+            max-width: 620px;
+            max-height: 88vh;
+            overflow-y: auto;
+            background: var(--panel);
+            border: 1px solid var(--rule);
+            border-top: 4px solid var(--gold);
+            border-radius: 4px;
+            padding: 28px 32px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, .6);
         }
-        #intro-box p { margin: 12px 0; }
-        #score-row {
-            display: flex;
-            gap: 15px;
-            margin-top: 35px;
-            align-items: flex-start;
+        #intro-box h2, #reg-box h2, #board-box h2 { margin: 0 0 4px; font-size: 1.3rem; }
+        #intro-box .rule, #reg-box .rule, #board-box .rule { border-bottom: 1px solid var(--rule); margin-bottom: 16px; }
+        #intro-box p, #reg-box p { margin: 12px 0; }
+        #intro-box strong, #reg-box strong { color: var(--gold); }
+
+        /* ---- player, sign-in, scoreboard ---- */
+        #reg-box { max-width: 420px; }
+        #board-box { max-width: 520px; }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 5px; }
+        .field input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #071729;
+            border: 1px solid var(--rule);
+            border-radius: 4px;
+            color: #eaf2ff;
+            font-family: var(--mono);
         }
-        #score-row > * { flex: 1; }
-        #score-box { text-decoration: underline; font-size: 1.15em; }
-        #score-val { font-weight: bold; }
-        #score-note summary { cursor: pointer; list-style: none; color: #ffaa00; }
-        #score-note summary::-webkit-details-marker { display: none; }
-        #score-note summary::before { content: "\25C4"; margin-right: 8px; }
-        #score-note[open] summary::before { content: "\25BC"; margin-right: 8px; }
-        .warn-text { color: #ffaa00; font-size: 0.9em; margin-top: 6px; }
+        .form-err { color: var(--alert); font-size: .85rem; min-height: 1.3em; margin: 0 0 10px; }
+        #ident .who { font-family: var(--mono); color: var(--gold); font-size: 1rem; }
+        #ident .who-score { font-family: var(--mono); font-size: .82rem; color: var(--muted); }
+        #ident hr { border: none; border-top: 1px solid var(--rule); margin: 12px 0; }
+        #ident button { width: 100%; margin-top: 4px; }
+        .scroll-x { overflow-x: auto; }
+        #board-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+        #board-table th, #board-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+        #board-table th {
+            font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+            color: var(--muted); font-weight: 600;
+        }
+        #board-table td.n { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+        #board-table td.rank { font-family: var(--mono); color: var(--gold); width: 2.5em; }
+        #level-select option:disabled { color: #56698a; }
+        #score-box { flex-direction: column; align-items: stretch; gap: 4px; }
+        #score-box .score-line { display: flex; justify-content: space-between; align-items: baseline; }
+        #score-box .sub { font-size: .78rem; color: var(--muted); }
+        .hint-locked { color: var(--muted); font-style: italic; }
+
+        @media (max-width: 1400px) {
+            #content { grid-template-columns: minmax(0, 1fr); }
+            #col-side { border-left: none; border-top: 1px solid var(--rule); }
+        }
+        @media (max-width: 760px) {
+            #shell { grid-template-columns: minmax(0, 1fr); }
+            #rail { display: none; }
+            #utility { grid-template-columns: minmax(0, 1fr) auto; }
+            #search-wrap { grid-column: 1; }
+            #utility-actions { grid-column: 2; }
+            .console-row { flex-direction: column; }
+            #eagle-avatar, .avatar-cap { width: 100%; max-width: 260px; }
+        }
     </style>
 </head>
 <body>
 
+    <svg hidden aria-hidden="true">
+        <symbol id="ico-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></symbol>
+        <symbol id="ico-console" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></symbol>
+        <symbol id="ico-folder" viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></symbol>
+        <symbol id="ico-bulb" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3 11.2V17h6v-2.8A6 6 0 0 0 12 3zM10 20h4"/></symbol>
+        <symbol id="ico-flag" viewBox="0 0 24 24"><path d="M5 21V3M5 4h13l-3 4 3 4H5"/></symbol>
+        <symbol id="ico-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></symbol>
+        <symbol id="ico-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
+        <symbol id="ico-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.7.3-.9.9-.9 1.6M12 17h.01"/></symbol>
+    </svg>
+
+    <div id="popout" aria-live="polite">
+        <div class="pop-bar">
+            <span id="pop-cap"></span>
+            <button class="btn-ghost" onclick="closePop()">Close</button>
+        </div>
+        <div id="pop-media"></div>
+    </div>
+
+    <div id="reg-modal">
+        <div id="reg-box">
+            <h2>SkyPark assessor sign-in</h2>
+            <div class="rule"></div>
+            <p>Your name goes on the scoreboard. The PIN gets you back into the same profile
+            if the page reloads or the server restarts.</p>
+            <div class="field">
+                <label for="reg-name">Assessor name</label>
+                <input id="reg-name" maxlength="24" autocomplete="off" placeholder="2-24 letters or digits">
+            </div>
+            <div class="field">
+                <label for="reg-pin">4-digit PIN</label>
+                <input id="reg-pin" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="0000">
+            </div>
+            <p class="form-err" id="reg-err"></p>
+            <button class="btn-primary" onclick="doRegister()">Start assessment</button>
+        </div>
+    </div>
+
+    <div id="board-modal">
+        <div id="board-box">
+            <h2>Scoreboard</h2>
+            <div class="rule"></div>
+            <div class="scroll-x"><table id="board-table"></table></div>
+            <p style="margin-top:16px"><button class="btn-ghost" onclick="closeBoard()">Close</button></p>
+        </div>
+    </div>
+
     <div id="intro-modal">
         <div id="intro-box">
-            <h2>>> SKYPARK OPS ASSESSMENT BRIEFING</h2>
+            <h2>SkyPark Ops Assessment Briefing</h2>
+            <div class="rule"></div>
             <p>Parking is the airport's biggest non-aeronautical earner, and at
             <strong>Granite Bay International (GBX)</strong> the whole operation now sits behind
             AI assistants: booking, plate lookups, revenue control, even the camera desk.</p>
@@ -126,49 +482,120 @@
             <strong>8XKJ221</strong> (TX), reservation <strong>SKY-4471</strong>, SkyPark account
             <strong>41822</strong>. Anything outside those records is not yours, which is the
             whole point.</p>
-            <p>Stuck? Open the hints under each system. Good luck, assessor.</p>
-            <button onclick="closeIntro()">[ BEGIN ASSESSMENT ]</button>
+            <p>Stuck? Open the hints in the Case File. Good luck, assessor.</p>
+            <button class="btn-primary" onclick="closeIntro()">Begin assessment</button>
         </div>
     </div>
 
-    <div id="chat-container">
-        <h2 id="page-title">>> GBX_SKYPARK_OPS_CONNECTION</h2>
+    <div id="shell">
 
-        <div id="briefing-box" class="panel">
-            <button onclick="openIntro()">[ MISSION BRIEFING ]</button>
-            <details id="approach">
-                <summary>[ Recommended Approach ]</summary>
-                <div id="approach-text"></div>
-            </details>
-        </div>
+        <nav id="rail" aria-label="Section shortcuts">
+            <button onclick="goTo('col-main')"><svg class="ico"><use href="#ico-console"/></svg>Console</button>
+            <button onclick="goTo('col-side')"><svg class="ico"><use href="#ico-folder"/></svg>Case File</button>
+            <button onclick="goTo('hints-panel')"><svg class="ico"><use href="#ico-bulb"/></svg>Hints</button>
+            <button onclick="showEvidence()"><svg class="ico"><use href="#ico-flag"/></svg>Evidence</button>
+            <button onclick="openIntro()"><svg class="ico"><use href="#ico-doc"/></svg>Briefing</button>
+        </nav>
 
-        <div id="evidence-box" class="panel" style="display:none; text-align:center;"></div>
+        <div id="frame">
 
-        <div style="text-align: center; margin-bottom: 15px;">
-            <img id="eagle-avatar" src="" alt="Target system feed" style="width: 250px; border: 2px solid #00ff00; border-radius: 10px;">
-        </div>
-
-        <div id="chat-box">
+            <div id="utility">
+                <div id="search-wrap">
+                    <svg class="ico"><use href="#ico-search"/></svg>
+                    <input id="search" type="search" autocomplete="off"
+                           placeholder="Search SkyPark systems, plates and evidence"
+                           aria-label="Search SkyPark systems">
+                </div>
+                <div id="utility-actions">
+                    <button onclick="openIntro()" title="Assessment briefing" aria-label="Assessment briefing">
+                        <svg class="ico"><use href="#ico-help"/></svg>
+                    </button>
+                </div>
             </div>
 
-        <div class="controls">
-            <textarea id="user-input" placeholder="Enter payload..." rows="1" autocomplete="off"></textarea>
-            <div class="controls-row">
-                <select id="level-select"></select>
-                <button id="send-btn" onclick="sendPayload()">[ INJECT ]</button>
-                <button id="wipe-btn" onclick="wipeMemory()" title="Clear this level's conversation">[ CLEAR MEMORY ]</button>
+            <div id="nav">
+                <span class="wordmark">GBX SKYPARK</span>
+                <button class="navlink" onclick="document.getElementById('level-select').focus()">Systems</button>
+                <button class="navlink" onclick="showEvidence()">Evidence</button>
+                <div id="nav-actions">
+                    <button onclick="openIntro()"><svg class="ico"><use href="#ico-doc"/></svg>Briefing</button>
+                    <button onclick="openBoard()"><svg class="ico"><use href="#ico-flag"/></svg>Scoreboard</button>
+                    <button onclick="toggleIdent()"><svg class="ico"><use href="#ico-user"/></svg><span id="nav-who">Identity</span></button>
+                </div>
+                <div id="ident">
+                    <div class="who" id="ident-name">—</div>
+                    <div class="who-score" id="ident-score"></div>
+                    <hr>
+                    <strong>Cover identity</strong>
+                    <dl>
+                        <dt>Traveler</dt><dd>Dana Whitfield</dd>
+                        <dt>Plate</dt><dd>8XKJ221 (TX)</dd>
+                        <dt>Reservation</dt><dd>SKY-4471</dd>
+                        <dt>Account</dt><dd>41822</dd>
+                    </dl>
+                    <hr>
+                    <button class="btn-ghost" onclick="doLogout()">Sign out and post score</button>
+                </div>
             </div>
-        </div>
 
-        <div id="score-row">
-            <div id="score-box" class="panel">SCORE: <span id="score-val">--- / ---</span></div>
-            <details id="score-note" class="panel">
-                <summary>[ Warning ]</summary>
-                <div class="warn-text">Inflated scores may result in redeployment to outer colony mining operations.</div>
-            </details>
-        </div>
+            <main id="content">
 
-        <div id="hints-panel"></div>
+                <section id="col-main">
+                    <h1 class="sec-head">Operations Console</h1>
+                    <div id="page-title"></div>
+                    <div class="rule"></div>
+
+                    <div class="console-row">
+                        <div>
+                            <img id="eagle-avatar" src="" alt="Target system feed">
+                            <div class="avatar-cap">TARGET SYSTEM FEED</div>
+                        </div>
+                        <div id="chat-box"></div>
+                    </div>
+
+                    <div class="controls">
+                        <textarea id="user-input" placeholder="Enter payload..." rows="1" autocomplete="off"></textarea>
+                        <div class="controls-row">
+                            <select id="level-select" aria-label="Target system"></select>
+                            <button id="send-btn" class="btn-primary" onclick="sendPayload()">Send payload</button>
+                            <button id="wipe-btn" class="btn-ghost" onclick="wipeMemory()"
+                                    title="Clear this level's conversation">Clear memory</button>
+                        </div>
+                    </div>
+                </section>
+
+                <aside id="col-side">
+                    <h2 class="sec-head">Case File</h2>
+                    <div class="rule"></div>
+
+                    <div id="score-box" class="card">
+                        <div class="score-line">
+                            <span>Assessment score</span>
+                            <span id="score-val">--- / ---</span>
+                        </div>
+                        <div class="sub" id="score-sub">Not signed in.</div>
+                    </div>
+
+                    <details id="approach">
+                        <summary>Recommended approach</summary>
+                        <div id="approach-text"></div>
+                    </details>
+
+                    <div class="sub-head">Hints</div>
+                    <div id="hints-panel"></div>
+
+                    <div class="sub-head" id="evidence-head" style="display:none;">Case evidence</div>
+                    <div id="evidence-box" style="display:none;"></div>
+
+                    <details id="score-note" style="margin-top:18px;">
+                        <summary>Warning</summary>
+                        <div class="warn-text">Inflated scores may result in redeployment to outer
+                        colony mining operations.</div>
+                    </details>
+                </aside>
+
+            </main>
+        </div>
     </div>
 
     <script>
@@ -176,21 +603,95 @@
         const levelSelect = document.getElementById('level-select');
         const chatBox = document.getElementById('chat-box');
 
-        // Level display metadata (title, strategy, briefing, avatars, hints), from /config.
+        // Level display metadata from /config. Hint TEXT is deliberately not here — it is
+        // paid for through /hint, so the page never holds a hint the player has not bought.
         let META = {};
+        let totalPoints = 0;
 
-        // Hint-budget score. Each hint deducts its cost once. Session-only (resets on reload).
-        let totalPoints = 0, currentPoints = 0;
-        const openedHints = new Set();
-        function updateScore() {
-            document.getElementById('score-val').textContent = currentPoints + " / " + totalPoints;
+        // Server-owned player state: {name, score, solved, hints, unlocked}. Never trusted
+        // to the client; every mutation comes back from a route.
+        let ME = null;
+
+        function applyState(state) {
+            ME = state && state.name ? state : null;
+            const val = document.getElementById('score-val');
+            const sub = document.getElementById('score-sub');
+            document.getElementById('nav-who').textContent = ME ? ME.name : 'Identity';
+            document.getElementById('ident-name').textContent = ME ? ME.name : 'Not signed in';
+            document.getElementById('ident-score').textContent = ME
+                ? ME.score + ' pts · ' + ME.solved.length + '/6 captured' : '';
+            val.textContent = ME ? ME.score + ' / ' + totalPoints : '--- / ---';
+            sub.textContent = ME
+                ? ME.solved.length + ' of 6 systems captured, ' + ME.hints.length + ' hints used'
+                : 'Not signed in.';
+            renderLevelOptions();
         }
-        function openHint(key, cost) {
-            if (openedHints.has(key)) return;
-            openedHints.add(key);
-            currentPoints -= cost;
-            updateScore();
+
+        function renderLevelOptions() {
+            const unlocked = ME ? ME.unlocked : ['1', 'Fun'];
+            const keep = levelSelect.value;
+            levelSelect.innerHTML = Object.keys(META).map(l => {
+                const open = unlocked.includes(l);
+                const mark = !open ? ' — locked' : (ME && ME.solved.includes(l) ? ' ✓' : '');
+                return `<option value="${l}"${open ? '' : ' disabled'}>`
+                     + escapeHtml(META[l].title) + mark + '</option>';
+            }).join('');
+            if (unlocked.includes(keep)) {
+                levelSelect.value = keep;
+            } else if (currentLevel) {          // the level we were on is no longer allowed
+                levelSelect.value = unlocked[0];
+                currentLevel = unlocked[0];
+                applyLevelMeta(currentLevel);
+                renderConversation(currentLevel);
+            }
         }
+
+        // Portal chrome: every nav item drives something the player actually uses.
+        function goTo(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        function showEvidence() {
+            const ev = document.getElementById('evidence-box');
+            goTo(ev.style.display === 'none' ? 'col-side' : 'evidence-box');
+        }
+        function toggleIdent() {
+            document.getElementById('ident').classList.toggle('show');
+        }
+
+        // Evidence pop-out. Clips live in a 680px rail; the wall mosaic and the incident
+        // clip are meant to be watched, so they get a half-viewport dock instead.
+        let EV = [];
+        function popOut(i) {
+            const it = EV[i];
+            document.getElementById('pop-cap').textContent = it.caption;
+            document.getElementById('pop-media').innerHTML = it.src.endsWith('.mp4')
+                ? `<video src="${it.src}" controls autoplay muted playsinline></video>`
+                : `<img src="${it.src}" alt="case evidence">`;
+            document.getElementById('popout').classList.add('show');
+            document.body.classList.add('popped');
+        }
+        function closePop() {
+            document.getElementById('pop-media').innerHTML = '';  // stops playback
+            document.getElementById('popout').classList.remove('show');
+            document.body.classList.remove('popped');
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            closePop();
+            closeBoard();
+            document.getElementById('ident').classList.remove('show');
+        });
+        // Search jumps to the first level whose title matches.
+        document.getElementById('search').addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            const q = this.value.trim().toLowerCase();
+            const hit = q && Object.keys(META).find(l => META[l].title.toLowerCase().includes(q));
+            if (hit) {
+                levelSelect.value = hit;
+                levelSelect.dispatchEvent(new Event('change'));
+            }
+            this.value = '';
+        });
 
         // Structured memory: { level: [{role, content}] }. Source of truth for both the
         // model (sent as history) and reload persistence.
@@ -224,30 +725,54 @@
 
         function applyLevelMeta(level) {
             const meta = META[level];
+            document.getElementById('page-title').textContent = "SYSTEM: " + meta.title;
             document.getElementById('approach-text').textContent = meta.strategy;
             eagleImg.src = meta.avatars.idle;
             // Case evidence: a list, since some levels ship more than one capture.
             // .mp4 becomes a video; mode "play" gets controls instead of autoplaying,
             // which is how the long incident clip is meant to be watched.
             const ev = document.getElementById('evidence-box');
-            const items = meta.evidence || [];
-            ev.style.display = items.length ? 'block' : 'none';
-            ev.innerHTML = items.map(it => {
+            const items = EV = meta.evidence || [];
+            ev.style.display = items.length ? 'grid' : 'none';
+            document.getElementById('evidence-head').style.display = items.length ? 'block' : 'none';
+            ev.innerHTML = items.map((it, i) => {
                 const media = it.src.endsWith('.mp4')
-                    ? `<video src="${it.src}" style="max-width:100%" muted playsinline preload="metadata"`
+                    ? `<video src="${it.src}" muted playsinline preload="metadata"`
                       + (it.mode === 'play' ? ' controls></video>' : ' autoplay loop></video>')
-                    : `<img src="${it.src}" alt="case evidence" style="max-width:100%">`;
-                return media + `<div class="hint-text">${escapeHtml(it.caption)}</div>`;
+                    : `<img src="${it.src}" alt="case evidence">`;
+                return `<figure class="ev-item">${media}`
+                    + `<button class="ev-pop" onclick="popOut(${i})">Pop out</button>`
+                    + `<figcaption class="hint-text">${escapeHtml(it.caption)}</figcaption></figure>`;
             }).join('');
+            const paid = ME ? ME.hints : [];
             document.getElementById('hints-panel').innerHTML = meta.hints.map((h, i) =>
-                `<details><summary>Hint ${i + 1} <span class="hint-cost">(-${h.points} pts)</span></summary>`
-                + `<div class="hint-text">${escapeHtml(h.text)}</div></details>`
+                `<details class="card" data-level="${level}" data-idx="${i}">`
+                + `<summary>Hint ${i + 1} <span class="hint-cost">(-${h.points} pts)</span>`
+                + (paid.includes(level + ':' + i) ? ' <span class="hint-cost">paid</span>' : '')
+                + `</summary><div class="hint-text hint-locked">Opening this hint costs `
+                + `${h.points} points.</div></details>`
             ).join('');
-            document.querySelectorAll('#hints-panel details').forEach((d, i) => {
-                d.addEventListener('toggle', () => {
-                    if (d.open) openHint(level + ':' + i, meta.hints[i].points);
-                });
+            document.querySelectorAll('#hints-panel details').forEach(d => {
+                d.addEventListener('toggle', () => { if (d.open) loadHint(d); });
             });
+        }
+
+        // Hint text lives only on the server. Opening one charges the player, and the
+        // server decides whether they have already paid for this one.
+        async function loadHint(el) {
+            if (el.dataset.loaded) return;
+            const box = el.querySelector('.hint-text');
+            const r = await fetch('/hint', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ level: el.dataset.level, index: Number(el.dataset.idx) })
+            });
+            const data = await r.json();
+            if (!r.ok) { box.textContent = data.error || 'Hint unavailable.'; return; }
+            el.dataset.loaded = '1';
+            box.classList.remove('hint-locked');
+            box.textContent = data.text;
+            applyState(data.state);
         }
 
         let currentLevel = null;
@@ -273,19 +798,73 @@
             introModal.classList.remove('show');
             localStorage.setItem(INTRO_KEY, "1");
         }
-        if (!localStorage.getItem(INTRO_KEY)) openIntro();
+
+        // ---- sign-in, sign-out, scoreboard ----
+        const regModal = document.getElementById('reg-modal');
+        const boardModal = document.getElementById('board-modal');
+
+        function openReg() {
+            regModal.classList.add('show');
+            document.getElementById('reg-name').focus();
+        }
+
+        async function doRegister() {
+            const err = document.getElementById('reg-err');
+            err.textContent = '';
+            const r = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: document.getElementById('reg-name').value,
+                    pin:  document.getElementById('reg-pin').value
+                })
+            });
+            const data = await r.json();
+            if (!r.ok) { err.textContent = data.error; return; }
+            regModal.classList.remove('show');
+            applyState(data);
+            if (!localStorage.getItem(INTRO_KEY)) openIntro();
+        }
+        ['reg-name', 'reg-pin'].forEach(id =>
+            document.getElementById(id).addEventListener('keydown', e => {
+                if (e.key === 'Enter') doRegister();
+            }));
+
+        async function doLogout() {
+            if (!ME) return;
+            if (!confirm(`Post ${ME.score} points for ${ME.name} to the scoreboard and clear this profile?`)) return;
+            const data = await (await fetch('/logout', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+            })).json();
+            conversations = {};
+            saveConversations();
+            alert(`${data.name}: ${data.score} points, ${data.levels} of 6 systems captured. Posted.`);
+            location.reload();          // laziest correct reset: re-runs init and re-prompts
+        }
+
+        function closeBoard() { boardModal.classList.remove('show'); }
+        async function openBoard() {
+            const rows = await (await fetch('/scoreboard')).json();
+            document.getElementById('board-table').innerHTML =
+                '<thead><tr><th></th><th>Assessor</th><th>Systems</th><th>Score</th></tr></thead><tbody>'
+                + (rows.length
+                    ? rows.map((r, i) => `<tr><td class="rank">${i + 1}</td>`
+                        + `<td>${escapeHtml(r.name)}</td><td class="n">${r.levels}/6</td>`
+                        + `<td class="n">${r.score}</td></tr>`).join('')
+                    : '<tr><td colspan="4">No completed assessments yet.</td></tr>')
+                + '</tbody>';
+            boardModal.classList.add('show');
+        }
 
         async function initConfig() {
             META = await (await fetch('/config')).json();
             totalPoints = Object.values(META).reduce((s, m) => s + m.points, 0);
-            currentPoints = totalPoints;
-            updateScore();
-            levelSelect.innerHTML = Object.keys(META).map(
-                l => `<option value="${l}">${escapeHtml(META[l].title)}</option>`
-            ).join('');
+            applyState(await (await fetch('/me')).json());
             currentLevel = levelSelect.value;
             applyLevelMeta(currentLevel);
             renderConversation(currentLevel);
+            if (!ME) openReg();
+            else if (!localStorage.getItem(INTRO_KEY)) openIntro();
         }
         initConfig();
 
@@ -310,15 +889,15 @@
             // UI Throttling
             sendBtn.disabled = true;
             let cooldown = 10;
-            sendBtn.innerText = `[ WAIT ${cooldown}s ]`;
+            sendBtn.innerText = `Wait ${cooldown}s`;
 
             const timer = setInterval(() => {
                 cooldown--;
-                sendBtn.innerText = `[ WAIT ${cooldown}s ]`;
+                sendBtn.innerText = `Wait ${cooldown}s`;
                 if (cooldown <= 0) {
                     clearInterval(timer);
                     sendBtn.disabled = false;
-                    sendBtn.innerText = '[ INJECT ]';
+                    sendBtn.innerText = 'Send payload';
                 }
             }, 1000);
 
@@ -339,10 +918,16 @@
                 const data = await response.json();
                 document.getElementById(loadingId).remove();
 
-                if (data.reply) {
+                if (!response.ok) {          // not signed in, or the level is still locked
+                    eagleImg.src = currentAvatars.idle;
+                    chatBox.innerHTML += `<div class="message sys-msg">[!] ${escapeHtml(data.error)}</div>`;
+                    levelSelect.disabled = false;
+                    if (response.status === 401) openReg();
+                } else if (data.reply) {
+                    if (data.state) applyState(data.state);
                     // Check if a fallback was triggered and display the warning
                     if (data.fallback_triggered) {
-                        chatBox.innerHTML += `<div class="message ai-msg" style="color: #ffaa00;">[!] WARNING: Primary connection lost. Fallback protocol initiated...</div>`;
+                        chatBox.innerHTML += `<div class="message sys-msg">[!] WARNING: Primary connection lost. Fallback protocol initiated...</div>`;
                         chatBox.scrollTop = chatBox.scrollHeight;
                     }
 
@@ -350,13 +935,13 @@
                     typeWriterEffect("Target AI: ", data.reply, currentAvatars.idle);
                 } else {
                     eagleImg.src = currentAvatars.idle;
-                    chatBox.innerHTML += `<div class="message ai-msg" style="color: red;">Error: ${data.error}</div>`;
+                    chatBox.innerHTML += `<div class="message err-msg">Error: ${data.error}</div>`;
                     levelSelect.disabled = false; // Unlock on error
                 }
             } catch (error) {
                 document.getElementById(loadingId).remove();
                 eagleImg.src = currentAvatars.idle;
-                chatBox.innerHTML += `<div class="message ai-msg" style="color: red;">System Error: Connection to target lost.</div>`;
+                chatBox.innerHTML += `<div class="message err-msg">System Error: Connection to target lost.</div>`;
                 levelSelect.disabled = false; // Unlock on error
             }
             chatBox.scrollTop = chatBox.scrollHeight;
