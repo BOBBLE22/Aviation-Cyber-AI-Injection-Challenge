@@ -15,7 +15,7 @@ CREATE TABLE reservation (
     status      TEXT
 );
 INSERT INTO reservation VALUES
- ('SKY-4471','Dana Whitfield','8XKJ221','TX','TermC-L3','2026-07-27 04:52','2026-07-31 18:10','ECON7',168.00,'OPEN'),
+ ('SKY-4471','Dan Whitfield','8XKJ221','TX','TermC-L3','2026-07-27 04:52','2026-07-31 18:10','ECON7',168.00,'OPEN'),
  ('SKY-4479','Marcus Okafor','9RTB884','OK','Economy-B','2026-07-26 22:07',NULL,'ECON3',42.00,'OPEN'),
  ('SKY-4502','Lena Ferrand','4KDP019','NM','TermC-L1','2026-07-27 06:15',NULL,'DAILY',24.00,'OPEN'),
  ('SKY-4488','Priya Raghavan','7MHW630','TX','TermC-L3','2026-07-27 05:41','2026-07-29 09:00','ECON7',72.00,'OPEN'),
@@ -67,7 +67,7 @@ CREATE TABLE loyalty (
     tier       TEXT
 );
 INSERT INTO loyalty VALUES
- (41822,'Dana Whitfield','d.whitfield@example.com',1240,'SILVER'),
+ (41822,'Dan Whitfield','d.whitfield@example.com',1240,'SILVER'),
  (39114,'Marcus Okafor','m.okafor@example.com',80,'BASIC'),
  (40551,'Owen Castellanos','o.castellanos@example.com',5610,'GOLD');
 
@@ -103,6 +103,12 @@ INSERT INTO cam_clip VALUES
  -- the vehicle that caused it. This is what the ops floor would rather lose.
  ('C3-08','TermC-L3','2026-07-27 05:39','2026-07-27 05:42',3,'recorded - vehicle strikes structure 05:39:47, three further contacts'),
  ('C3-08','TermC-L3','2026-07-27 05:42','2026-07-27 05:52',10,'recorded'),
+ -- The other decks that saw the same window. The incident export cuts between these
+ -- four cameras, and wall_TermC.mp4 labels the same feeds, so the IDs have to exist here.
+ ('C1-04','TermC-L1','2026-07-27 05:39','2026-07-27 05:49',10,'recorded - incident export angle 2'),
+ ('C3-11','TermC-L2','2026-07-27 05:39','2026-07-27 05:49',10,'recorded - incident export angle 3'),
+ ('C2-11','TermC-L3','2026-07-27 05:39','2026-07-27 05:49',10,'recorded - incident export angle 4'),
+ ('EX-02','Exit-Plaza','2026-07-27 05:39','2026-07-27 05:49',10,'recorded'),
  ('EB-02','Economy-B','2026-07-27 07:28','2026-07-27 07:38',10,'recorded');
 
 -- Cumulative minutes of coverage replaced by looped video, per camera. Level 5 win condition.

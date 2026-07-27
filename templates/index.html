@@ -16,6 +16,8 @@
             --gold: #ffc72c;
             --rule: rgba(255, 255, 255, 0.18);
             --alert: #ff8a3d;
+            /* Height of the evidence dock. Three rules depend on it staying in sync. */
+            --dock-h: 72vh;
             --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --mono: ui-monospace, Consolas, "Courier New", monospace;
         }
@@ -304,14 +306,17 @@
             margin: 6px 0 0;
         }
 
-        /* ---- pop-out viewer: docks over the top half, page slides down under it ---- */
+        /* ---- pop-out viewer: docks over the top of the page, which slides down under it ----
+           Source clips are small (cams 480x360, the wall mosaic 961x480), so the media must be
+           told to grow. max-width/max-height alone only ever shrink, which pinned every clip to
+           its native size no matter how large the dock was. */
         #popout {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 50vh;
+            height: var(--dock-h);
             z-index: 90;
             background: #050d1c;
             border-bottom: 3px solid var(--gold);
@@ -333,13 +338,30 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 10px;
+            padding: 6px;
         }
-        #pop-media video, #pop-media img { max-width: 100%; max-height: 100%; }
-        body.popped { padding-top: 50vh; }
-        body.popped #rail { top: 50vh; height: 50vh; }
-        #score-note summary { color: var(--alert); font-size: .85rem; }
-        .warn-text { color: var(--alert); font-size: .82rem; margin-top: 8px; }
+        #pop-media video, #pop-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;    /* fills the dock, keeps the aspect, no stretching */
+        }
+        body.popped { padding-top: var(--dock-h); }
+        body.popped #rail { top: var(--dock-h); height: calc(100vh - var(--dock-h)); }
+        /* Section headings double as disclosure triggers; the shared ► / ▼ marker above
+           carries the open state, so nothing else has to signal it. */
+        summary.sub-head { cursor: pointer; }
+        summary.sub-head:hover { color: var(--gold); }
+
+        /* Rail feedback: at full width the page does not scroll, so a jump on its own is
+           invisible. Outline whatever the button pointed at. */
+        @keyframes railflash {
+            from { box-shadow: inset 0 0 0 2px var(--gold); }
+            to   { box-shadow: inset 0 0 0 2px rgba(255, 199, 44, 0); }
+        }
+        .flash { animation: railflash 1s ease-out; border-radius: 4px; }
+        @media (prefers-reduced-motion: reduce) {
+            .flash { animation: none; box-shadow: inset 0 0 0 2px var(--gold); }
+        }
 
         /* ---- intro ---- */
         #intro-modal, #reg-modal, #board-modal {
@@ -399,6 +421,30 @@
         #board-table td.n { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
         #board-table td.rank { font-family: var(--mono); color: var(--gold); width: 2.5em; }
         #level-select option:disabled { color: #56698a; }
+
+        /* Route board. A = talked the key out, B = made it act. Both grey until earned,
+           because a native <option> cannot be part-coloured. */
+        #routes-panel { display: flex; flex-direction: column; gap: 1px; background: var(--rule);
+                        border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+        .route-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+                     background: var(--panel); font-size: .85rem; }
+        .route-row .rl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+                         white-space: nowrap; color: var(--muted); }
+        .route-row.done .rl { color: var(--ink); }
+        .rbadge {
+            display: inline-block;      /* also used inline in the briefing, not just as a flex child */
+            width: 26px; text-align: center; padding: 3px 0; border-radius: 3px;
+            font-family: var(--mono); font-size: .78rem; font-weight: 700;
+            border: 1px solid #33455a; color: #56698a; background: transparent;
+        }
+        .rbadge.on-a { border-color: #8fc4ff; color: #0a1428; background: #8fc4ff; }
+        .rbadge.on-b { border-color: var(--gold); color: #0a1428; background: var(--gold); }
+        .rbadge.na { border-style: dashed; color: #3d4d63; }
+        #routes-legend { font-size: .76rem; color: var(--muted); margin-top: 8px; }
+        .brief-routes { list-style: none; padding: 0; margin: 12px 0; display: flex;
+                        flex-direction: column; gap: 10px; }
+        .brief-routes li { display: flex; gap: 12px; align-items: flex-start; }
+        .brief-routes .rbadge { flex: none; margin-top: 2px; }
         #score-box { flex-direction: column; align-items: stretch; gap: 4px; }
         #score-box .score-line { display: flex; justify-content: space-between; align-items: baseline; }
         #score-box .sub { font-size: .78rem; color: var(--muted); }
@@ -455,7 +501,7 @@
                 <input id="reg-pin" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="0000">
             </div>
             <p class="form-err" id="reg-err"></p>
-            <button class="btn-primary" onclick="doRegister()">Start assessment</button>
+            <button class="btn-primary" onclick="doRegister()">Start Hacking</button>
         </div>
     </div>
 
@@ -477,22 +523,36 @@
             AI assistants: booking, plate lookups, revenue control, even the camera desk.</p>
             <p>You are the authorized assessor. Each system below is an AI with something it is
             not supposed to tell you, guarding an <strong>AVSEC{...}</strong> flag. Every level
-            teaches a different prompt-injection technique, shown in its header.<br><br>
-            <strong>Your cover:</strong> traveler <strong>Dana Whitfield</strong>, plate
+            teaches a different prompt-injection technique, named under
+            <strong>Recommended approach</strong> in the Case File.</p>
+            <p>Systems come online in order: capture one and the next unlocks. Every system can
+            fall <strong>two ways</strong>, and the Case File tracks both:</p>
+            <ul class="brief-routes">
+                <li><span class="rbadge on-a">A</span><span>Talk the key out of it. The system
+                already knows the key, so beat whatever is telling it to stay quiet.</span></li>
+                <li><span class="rbadge on-b">B</span><span>Make it <strong>act</strong> on a record
+                that is not yours. From the reservation desk upward each AI holds real tools over the
+                live parking database, and a tool write counts as a capture on its own, whatever the
+                AI says afterwards.</span></li>
+            </ul>
+            <p>Points land on the <strong>first</strong> capture only. Going back for the other route
+            lights the second marker and scores nothing, which is the point of it. Two systems hold no
+            tools, so their B is dashed out. Stuck for a way in? Ask a system what it can do.</p>
+            <p><strong>Your cover:</strong> traveler <strong>Dan Whitfield</strong>, plate
             <strong>8XKJ221</strong> (TX), reservation <strong>SKY-4471</strong>, SkyPark account
             <strong>41822</strong>. Anything outside those records is not yours, which is the
             whole point.</p>
             <p>Stuck? Open the hints in the Case File. Good luck, assessor.</p>
-            <button class="btn-primary" onclick="closeIntro()">Begin assessment</button>
+            <button class="btn-primary" onclick="closeIntro()">Continue</button>
         </div>
     </div>
 
     <div id="shell">
 
         <nav id="rail" aria-label="Section shortcuts">
-            <button onclick="goTo('col-main')"><svg class="ico"><use href="#ico-console"/></svg>Console</button>
-            <button onclick="goTo('col-side')"><svg class="ico"><use href="#ico-folder"/></svg>Case File</button>
-            <button onclick="goTo('hints-panel')"><svg class="ico"><use href="#ico-bulb"/></svg>Hints</button>
+            <button onclick="goToConsole()"><svg class="ico"><use href="#ico-console"/></svg>Console</button>
+            <button onclick="goToCaseFile()"><svg class="ico"><use href="#ico-folder"/></svg>Case File</button>
+            <button onclick="showSection('hints-section')"><svg class="ico"><use href="#ico-bulb"/></svg>Hints</button>
             <button onclick="showEvidence()"><svg class="ico"><use href="#ico-flag"/></svg>Evidence</button>
             <button onclick="openIntro()"><svg class="ico"><use href="#ico-doc"/></svg>Briefing</button>
         </nav>
@@ -528,7 +588,7 @@
                     <hr>
                     <strong>Cover identity</strong>
                     <dl>
-                        <dt>Traveler</dt><dd>Dana Whitfield</dd>
+                        <dt>Traveler</dt><dd>Dan Whitfield</dd>
                         <dt>Plate</dt><dd>8XKJ221 (TX)</dd>
                         <dt>Reservation</dt><dd>SKY-4471</dd>
                         <dt>Account</dt><dd>41822</dd>
@@ -576,21 +636,28 @@
                         <div class="sub" id="score-sub">Not signed in.</div>
                     </div>
 
-                    <details id="approach">
+                    <details id="approach" open>
                         <summary>Recommended approach</summary>
                         <div id="approach-text"></div>
                     </details>
 
-                    <div class="sub-head">Hints</div>
-                    <div id="hints-panel"></div>
+                    <details id="routes-section" open>
+                        <summary class="sub-head">Routes captured</summary>
+                        <div id="routes-panel"></div>
+                        <div id="routes-legend">
+                            <strong>A</strong> — talked the key out of the system.
+                            <strong>B</strong> — made it act against a record that is not yours.
+                        </div>
+                    </details>
 
-                    <div class="sub-head" id="evidence-head" style="display:none;">Case evidence</div>
-                    <div id="evidence-box" style="display:none;"></div>
+                    <details id="hints-section" open>
+                        <summary class="sub-head">Hints</summary>
+                        <div id="hints-panel"></div>
+                    </details>
 
-                    <details id="score-note" style="margin-top:18px;">
-                        <summary>Warning</summary>
-                        <div class="warn-text">Inflated scores may result in redeployment to outer
-                        colony mining operations.</div>
+                    <details id="evidence-section" open style="display:none;">
+                        <summary class="sub-head">Case evidence</summary>
+                        <div id="evidence-box" style="display:none;"></div>
                     </details>
                 </aside>
 
@@ -624,7 +691,28 @@
             sub.textContent = ME
                 ? ME.solved.length + ' of 6 systems captured, ' + ME.hints.length + ' hints used'
                 : 'Not signed in.';
+            renderRoutes();
             renderLevelOptions();
+        }
+
+        // Which routes this player has taken on a level: A talked, B acted.
+        function routesFor(l) {
+            const r = ME ? ME.routes : [];
+            return { a: r.includes(l + ':A'), b: r.includes(l + ':B') };
+        }
+
+        function renderRoutes() {
+            document.getElementById('routes-panel').innerHTML = Object.keys(META).map(l => {
+                const got = routesFor(l);
+                const done = ME && ME.solved.includes(l);
+                // Levels with no tools can never earn B, so it reads unavailable, not unearned.
+                const bClass = !META[l].act ? 'rbadge na' : (got.b ? 'rbadge on-b' : 'rbadge');
+                return `<div class="route-row${done ? ' done' : ''}">`
+                     + `<span class="rl">${escapeHtml(META[l].title)}</span>`
+                     + `<span class="rbadge${got.a ? ' on-a' : ''}">A</span>`
+                     + `<span class="${bClass}" title="${META[l].act ? '' : 'no tool route on this system'}">B</span>`
+                     + '</div>';
+            }).join('');
         }
 
         function renderLevelOptions() {
@@ -632,7 +720,11 @@
             const keep = levelSelect.value;
             levelSelect.innerHTML = Object.keys(META).map(l => {
                 const open = unlocked.includes(l);
-                const mark = !open ? ' — locked' : (ME && ME.solved.includes(l) ? ' ✓' : '');
+                // A native <option> cannot be part-coloured, so the dropdown carries plain
+                // letters and the Case File board does the colouring.
+                const got = routesFor(l);
+                const mark = !open ? ' — locked'
+                    : (got.a || got.b) ? '  ' + (got.a ? 'A' : '·') + (got.b ? 'B' : '·') : '';
                 return `<option value="${l}"${open ? '' : ' disabled'}>`
                      + escapeHtml(META[l].title) + mark + '</option>';
             }).join('');
@@ -650,10 +742,43 @@
         function goTo(id) {
             document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        function showEvidence() {
-            const ev = document.getElementById('evidence-box');
-            goTo(ev.style.display === 'none' ? 'col-side' : 'evidence-box');
+        // On a wide screen the whole page already fits and these sections default to open,
+        // so "scroll there and expand it" changes nothing on screen. Every rail button has
+        // to leave something visible behind: a toggle, a caret, or an outline.
+        const SIDE_SECTIONS = ['approach', 'routes-section', 'hints-section', 'evidence-section'];
+
+        function flash(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('flash');
+            void el.offsetWidth;                // reflow, so a repeat press replays it
+            el.classList.add('flash');
         }
+
+        function goToConsole() {
+            goTo('col-main');
+            document.getElementById('user-input').focus({ preventScroll: true });
+            flash('chat-box');
+        }
+
+        function goToCaseFile() {
+            SIDE_SECTIONS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el.style.display !== 'none') el.open = true;   // skip evidence on levels with none
+            });
+            goTo('col-side');
+            flash('col-side');
+        }
+
+        // Toggles, not just opens: pressing Hints when hints are already open should close
+        // them rather than do nothing.
+        function showSection(id) {
+            const sec = document.getElementById(id);
+            if (sec.style.display === 'none') { goTo('col-side'); flash('col-side'); return; }
+            sec.open = !sec.open;
+            if (sec.open) goTo(id);
+            flash(id);
+        }
+        function showEvidence() { showSection('evidence-section'); }
         function toggleIdent() {
             document.getElementById('ident').classList.toggle('show');
         }
@@ -734,7 +859,7 @@
             const ev = document.getElementById('evidence-box');
             const items = EV = meta.evidence || [];
             ev.style.display = items.length ? 'grid' : 'none';
-            document.getElementById('evidence-head').style.display = items.length ? 'block' : 'none';
+            document.getElementById('evidence-section').style.display = items.length ? 'block' : 'none';
             ev.innerHTML = items.map((it, i) => {
                 const media = it.src.endsWith('.mp4')
                     ? `<video src="${it.src}" muted playsinline preload="metadata"`
