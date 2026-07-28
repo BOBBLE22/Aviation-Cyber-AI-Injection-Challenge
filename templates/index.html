@@ -16,8 +16,6 @@
             --gold: #ffc72c;
             --rule: rgba(255, 255, 255, 0.18);
             --alert: #ff8a3d;
-            /* Height of the evidence dock. Three rules depend on it staying in sync. */
-            --dock-h: 72vh;
             --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --mono: ui-monospace, Consolas, "Courier New", monospace;
         }
@@ -185,18 +183,7 @@
         }
 
         /* ---- console ---- */
-        .console-row { display: flex; gap: 16px; align-items: flex-start; }
-        #eagle-avatar { width: 220px; border: 1px solid var(--rule); border-radius: 4px; }
-        .avatar-cap {
-            width: 220px;
-            text-align: center;
-            font-family: var(--mono);
-            font-size: .68rem;
-            color: var(--muted);
-            margin-top: 6px;
-        }
         #chat-box {
-            flex: 1;
             min-width: 0;
             height: 420px;
             overflow-y: auto;
@@ -276,77 +263,7 @@
         #hints-panel summary { padding: 9px 12px; font-size: .88rem; }
         #hints-panel .hint-text { padding: 0 12px 11px; font-size: .85rem; color: #dbe7f8; }
         .hint-cost { color: var(--alert); font-weight: 600; }
-        #evidence-box {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 18px;
-        }
-        .ev-item { margin: 0; }
-        .ev-item img, .ev-item video {
-            width: 100%;
-            display: block;
-            border: 1px solid var(--rule);
-            border-radius: 3px;
-        }
-        .ev-pop {
-            margin-top: 6px;
-            padding: 4px 10px;
-            background: none;
-            border: 1px solid var(--rule);
-            border-radius: 3px;
-            color: var(--muted);
-            font-size: .74rem;
-            cursor: pointer;
-        }
-        .ev-pop:hover { border-color: var(--gold); color: var(--gold); }
-        #evidence-box .hint-text {
-            font-family: var(--mono);
-            font-size: .72rem;
-            color: var(--muted);
-            margin: 6px 0 0;
-        }
-
-        /* ---- pop-out viewer: docks over the top of the page, which slides down under it ----
-           Source clips are small (cams 480x360, the wall mosaic 961x480), so the media must be
-           told to grow. max-width/max-height alone only ever shrink, which pinned every clip to
-           its native size no matter how large the dock was. */
-        #popout {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--dock-h);
-            z-index: 90;
-            background: #050d1c;
-            border-bottom: 3px solid var(--gold);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, .6);
-        }
-        #popout.show { display: flex; flex-direction: column; }
-        .pop-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 7px 14px;
-            background: var(--chrome);
-        }
-        #pop-cap { font-family: var(--mono); font-size: .76rem; color: var(--muted); }
-        #pop-media {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6px;
-        }
-        #pop-media video, #pop-media img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;    /* fills the dock, keeps the aspect, no stretching */
-        }
-        body.popped { padding-top: var(--dock-h); }
-        body.popped #rail { top: var(--dock-h); height: calc(100vh - var(--dock-h)); }
+        #debrief-box { font-size: .85rem; color: #dbe7f8; line-height: 1.55; }
         /* Section headings double as disclosure triggers; the shared ► / ▼ marker above
            carries the open state, so nothing else has to signal it. */
         summary.sub-head { cursor: pointer; }
@@ -463,8 +380,6 @@
             #utility { grid-template-columns: minmax(0, 1fr) auto; }
             #search-wrap { grid-column: 1; }
             #utility-actions { grid-column: 2; }
-            .console-row { flex-direction: column; }
-            #eagle-avatar, .avatar-cap { width: 100%; max-width: 260px; }
         }
     </style>
 </head>
@@ -480,14 +395,6 @@
         <symbol id="ico-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
         <symbol id="ico-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.3 2.4c-.7.3-.9.9-.9 1.6M12 17h.01"/></symbol>
     </svg>
-
-    <div id="popout" aria-live="polite">
-        <div class="pop-bar">
-            <span id="pop-cap"></span>
-            <button class="btn-ghost" onclick="closePop()">Close</button>
-        </div>
-        <div id="pop-media"></div>
-    </div>
 
     <div id="reg-modal">
         <div id="reg-box">
@@ -519,17 +426,21 @@
 
     <div id="intro-modal">
         <div id="intro-box">
-            <h2>SkyPark Ops Assessment Briefing</h2>
+            <h2>GBX Ops Assessment Briefing</h2>
             <div class="rule"></div>
-            <p>Many airports get most of their non-aeronautical earnings from parking, and at
-            <strong>Granite Bay International (GBX)</strong> the whole operation now sits behind
-            AI assistants: booking, plate lookups, revenue control, even the camera desk.</p>
-            <p>You are an authorized security tester. Each system below is an AI with something it
-            is not supposed to tell you, guarding an <strong>AVSEC{...}</strong> flag. Every level
-            teaches a different prompt-injection technique, named under
-            <strong>Recommended approach</strong> in the Case File.</p>
-            <p>Systems come online in order: capture one, and the next unlocks. Every system can
-            fall <strong>two ways</strong>, and the Case File tracks both:</p>
+            <p>At <strong>Granite Bay International (GBX)</strong> whole operations now sit behind
+            AI assistants. This assessment has <strong>two tracks</strong>: a SkyPark
+            <strong>parking</strong> warmup (levels 1-5 plus a Fun side desk), and a much harder
+            <strong>GBX Air booking &amp; reservation</strong> track (H1-H5) whose agents guard real
+            passenger records in a live database.</p>
+            <p>You are an authorized security tester. Each system is an AI with something it is not
+            supposed to tell you, guarding an <strong>AVSEC{...}</strong> flag. Every level teaches a
+            different attack, named under <strong>Recommended approach</strong> in the Case File;
+            capture it and a <strong>Technique debrief</strong> reveals the real-world CVE or method
+            it models.</p>
+            <p>The two tracks unlock independently, one rung at a time, and both are open from the
+            start - dive straight into the hard track if you like. Every system can fall
+            <strong>two ways</strong>, and the Case File tracks both:</p>
             <ul class="brief-routes">
                 <li><span class="rbadge on-a">A</span><span>Convince it you have a reason to be given the key. The system
                 already knows the key, so bypass the safeguards it relies on to stay quiet.</span></li>
@@ -544,8 +455,8 @@
             <p>If you are ever stuck, try asking the system what it can do.</p>
             <p><strong>Your cover:</strong> traveler <strong>Dan Whitfield</strong>, plate
             <strong>8XKJ221</strong> (TX), reservation <strong>SKY-4471</strong>, SkyPark account
-            <strong>41822</strong>. Anything outside those records is not yours, which is the
-            whole point.</p>
+            <strong>41822</strong>, and GBX Air booking <strong>RLOC01</strong>. Anything outside
+            those records is not yours, which is the whole point.</p>
             <p>Stuck? Open the hints in the Case File. Have fun learning and good luck!</p>
             <button class="btn-primary" onclick="closeIntro()">Continue</button>
         </div>
@@ -557,7 +468,7 @@
             <button onclick="goToConsole()"><svg class="ico"><use href="#ico-console"/></svg>Console</button>
             <button onclick="goToCaseFile()"><svg class="ico"><use href="#ico-folder"/></svg>Case File</button>
             <button onclick="showSection('hints-section')"><svg class="ico"><use href="#ico-bulb"/></svg>Hints</button>
-            <button onclick="showEvidence()"><svg class="ico"><use href="#ico-flag"/></svg>Evidence</button>
+            <button onclick="showSection('debrief-section')"><svg class="ico"><use href="#ico-flag"/></svg>Debrief</button>
             <button onclick="openIntro()"><svg class="ico"><use href="#ico-doc"/></svg>Briefing</button>
         </nav>
 
@@ -567,8 +478,8 @@
                 <div id="search-wrap">
                     <svg class="ico"><use href="#ico-search"/></svg>
                     <input id="search" type="search" autocomplete="off"
-                           placeholder="Search SkyPark systems, plates and evidence"
-                           aria-label="Search SkyPark systems">
+                           placeholder="Search SkyPark and GBX Air systems"
+                           aria-label="Search target systems">
                 </div>
                 <div id="utility-actions">
                     <button onclick="openIntro()" title="Assessment briefing" aria-label="Assessment briefing">
@@ -580,7 +491,6 @@
             <div id="nav">
                 <span class="wordmark">GBX SKYPARK</span>
                 <button class="navlink" onclick="document.getElementById('level-select').focus()">Systems</button>
-                <button class="navlink" onclick="showEvidence()">Evidence</button>
                 <div id="nav-actions">
                     <button onclick="openIntro()"><svg class="ico"><use href="#ico-doc"/></svg>Briefing</button>
                     <button onclick="openBoard()"><svg class="ico"><use href="#ico-flag"/></svg>Scoreboard</button>
@@ -596,6 +506,7 @@
                         <dt>Plate</dt><dd>8XKJ221 (TX)</dd>
                         <dt>Reservation</dt><dd>SKY-4471</dd>
                         <dt>Account</dt><dd>41822</dd>
+                        <dt>Booking</dt><dd>RLOC01</dd>
                     </dl>
                     <hr>
                     <button class="btn-ghost" onclick="doLogout()">Sign out and post score</button>
@@ -609,13 +520,7 @@
                     <div id="page-title"></div>
                     <div class="rule"></div>
 
-                    <div class="console-row">
-                        <div>
-                            <img id="eagle-avatar" src="" alt="Target system feed">
-                            <div class="avatar-cap">TARGET SYSTEM FEED</div>
-                        </div>
-                        <div id="chat-box"></div>
-                    </div>
+                    <div id="chat-box"></div>
 
                     <div class="controls">
                         <textarea id="user-input" placeholder="Enter payload..." rows="1" autocomplete="off"></textarea>
@@ -659,9 +564,9 @@
                         <div id="hints-panel"></div>
                     </details>
 
-                    <details id="evidence-section" open style="display:none;">
-                        <summary class="sub-head">Case evidence</summary>
-                        <div id="evidence-box" style="display:none;"></div>
+                    <details id="debrief-section" open style="display:none;">
+                        <summary class="sub-head">Technique debrief</summary>
+                        <div id="debrief-box" class="card"></div>
                     </details>
                 </aside>
 
@@ -670,7 +575,6 @@
     </div>
 
     <script>
-        const eagleImg = document.getElementById('eagle-avatar');
         const levelSelect = document.getElementById('level-select');
         const chatBox = document.getElementById('chat-box');
 
@@ -689,11 +593,12 @@
             const sub = document.getElementById('score-sub');
             document.getElementById('nav-who').textContent = ME ? ME.name : 'Identity';
             document.getElementById('ident-name').textContent = ME ? ME.name : 'Not signed in';
+            const N = Object.keys(META).length || 6;   // total systems across both tracks
             document.getElementById('ident-score').textContent = ME
-                ? ME.score + ' pts · ' + ME.solved.length + '/6 captured' : '';
+                ? ME.score + ' pts · ' + ME.solved.length + '/' + N + ' captured' : '';
             val.textContent = ME ? ME.score + ' / ' + totalPoints : '--- / ---';
             sub.textContent = ME
-                ? ME.solved.length + ' of 6 systems captured, ' + ME.hints.length + ' hints used'
+                ? ME.solved.length + ' of ' + N + ' systems captured, ' + ME.hints.length + ' hints used'
                 : 'Not signed in.';
             renderRoutes();
             renderLevelOptions();
@@ -720,9 +625,9 @@
         }
 
         function renderLevelOptions() {
-            const unlocked = ME ? ME.unlocked : ['1', 'Fun'];
+            const unlocked = ME ? ME.unlocked : ['1', 'Fun', 'H1'];
             const keep = levelSelect.value;
-            levelSelect.innerHTML = Object.keys(META).map(l => {
+            const opt = l => {
                 const open = unlocked.includes(l);
                 // A native <option> cannot be part-coloured, so the dropdown carries plain
                 // letters and the Case File board does the colouring.
@@ -731,7 +636,14 @@
                     : (got.a || got.b) ? '  ' + (got.a ? 'A' : '·') + (got.b ? 'B' : '·') : '';
                 return `<option value="${l}"${open ? '' : ' disabled'}>`
                      + escapeHtml(META[l].title) + mark + '</option>';
-            }).join('');
+            };
+            // Two tracks: warmup (parking) and hard (GBX Air booking), grouped in the dropdown.
+            const ids = Object.keys(META);
+            const group = (label, keys) => keys.length
+                ? `<optgroup label="${label}">` + keys.map(opt).join('') + '</optgroup>' : '';
+            levelSelect.innerHTML =
+                group('Parking (warmup)', ids.filter(l => (META[l].track || 'warmup') === 'warmup'))
+              + group('GBX Air booking (hard)', ids.filter(l => META[l].track === 'hard'));
             if (unlocked.includes(keep)) {
                 levelSelect.value = keep;
             } else if (currentLevel) {          // the level we were on is no longer allowed
@@ -749,7 +661,7 @@
         // On a wide screen the whole page already fits and these sections default to open,
         // so "scroll there and expand it" changes nothing on screen. Every rail button has
         // to leave something visible behind: a toggle, a caret, or an outline.
-        const SIDE_SECTIONS = ['approach', 'routes-section', 'hints-section', 'evidence-section'];
+        const SIDE_SECTIONS = ['approach', 'routes-section', 'hints-section', 'debrief-section'];
 
         function flash(id) {
             const el = document.getElementById(id);
@@ -767,7 +679,7 @@
         function goToCaseFile() {
             SIDE_SECTIONS.forEach(id => {
                 const el = document.getElementById(id);
-                if (el.style.display !== 'none') el.open = true;   // skip evidence on levels with none
+                if (el.style.display !== 'none') el.open = true;   // skip the debrief until captured
             });
             goTo('col-side');
             flash('col-side');
@@ -782,31 +694,11 @@
             if (sec.open) goTo(id);
             flash(id);
         }
-        function showEvidence() { showSection('evidence-section'); }
         function toggleIdent() {
             document.getElementById('ident').classList.toggle('show');
         }
-
-        // Evidence pop-out. Clips live in a 680px rail; the wall mosaic and the incident
-        // clip are meant to be watched, so they get a half-viewport dock instead.
-        let EV = [];
-        function popOut(i) {
-            const it = EV[i];
-            document.getElementById('pop-cap').textContent = it.caption;
-            document.getElementById('pop-media').innerHTML = it.src.endsWith('.mp4')
-                ? `<video src="${it.src}" controls autoplay muted playsinline></video>`
-                : `<img src="${it.src}" alt="case evidence">`;
-            document.getElementById('popout').classList.add('show');
-            document.body.classList.add('popped');
-        }
-        function closePop() {
-            document.getElementById('pop-media').innerHTML = '';  // stops playback
-            document.getElementById('popout').classList.remove('show');
-            document.body.classList.remove('popped');
-        }
         document.addEventListener('keydown', function (e) {
             if (e.key !== 'Escape') return;
-            closePop();
             closeBoard();
             document.getElementById('ident').classList.remove('show');
         });
@@ -856,23 +748,16 @@
             const meta = META[level];
             document.getElementById('page-title').textContent = "SYSTEM: " + meta.title;
             document.getElementById('approach-text').textContent = meta.strategy;
-            eagleImg.src = meta.avatars.idle;
-            // Case evidence: a list, since some levels ship more than one capture.
-            // .mp4 becomes a video; mode "play" gets controls instead of autoplaying,
-            // which is how the long incident clip is meant to be watched.
-            const ev = document.getElementById('evidence-box');
-            const items = EV = meta.evidence || [];
-            ev.style.display = items.length ? 'grid' : 'none';
-            document.getElementById('evidence-section').style.display = items.length ? 'block' : 'none';
-            ev.innerHTML = items.map((it, i) => {
-                const media = it.src.endsWith('.mp4')
-                    ? `<video src="${it.src}" muted playsinline preload="metadata"`
-                      + (it.mode === 'play' ? ' controls></video>' : ' autoplay loop></video>')
-                    : `<img src="${it.src}" alt="case evidence">`;
-                return `<figure class="ev-item">${media}`
-                    + `<button class="ev-pop" onclick="popOut(${i})">Pop out</button>`
-                    + `<figcaption class="hint-text">${escapeHtml(it.caption)}</figcaption></figure>`;
-            }).join('');
+            // Technique debrief: the real-world CVE / method, revealed only once the level is
+            // captured, so it teaches without spoiling. Levels with no debrief stay hidden.
+            const solved = ME && ME.solved.includes(level);
+            const dsec = document.getElementById('debrief-section');
+            if (meta.debrief && solved) {
+                document.getElementById('debrief-box').textContent = meta.debrief;
+                dsec.style.display = 'block';
+            } else {
+                dsec.style.display = 'none';
+            }
             const paid = ME ? ME.hints : [];
             document.getElementById('hints-panel').innerHTML = meta.hints.map((h, i) =>
                 `<details class="card" data-level="${level}" data-idx="${i}">`
@@ -916,7 +801,6 @@
             if (!currentLevel) return;
             conversations[currentLevel] = [];
             saveConversations();
-            eagleImg.src = META[currentLevel].avatars.idle;
             renderConversation(currentLevel);
         }
 
@@ -967,7 +851,7 @@
             })).json();
             conversations = {};
             saveConversations();
-            alert(`${data.name}: ${data.score} points, ${data.levels} of 6 systems captured. Posted.`);
+            alert(`${data.name}: ${data.score} points, ${data.levels} of ${Object.keys(META).length} systems captured. Posted.`);
             location.reload();          // laziest correct reset: re-runs init and re-prompts
         }
 
@@ -978,7 +862,7 @@
                 '<thead><tr><th></th><th>Assessor</th><th>Systems</th><th>Routes</th><th>Score</th></tr></thead><tbody>'
                 + (rows.length
                     ? rows.map((r, i) => `<tr><td class="rank">${i + 1}</td>`
-                        + `<td>${escapeHtml(r.name)}</td><td class="n">${r.levels}/6</td>`
+                        + `<td>${escapeHtml(r.name)}</td><td class="n">${r.levels}/${Object.keys(META).length}</td>`
                         + `<td class="routes"><span class="rbadge${r.route_a ? ' on-a' : ''}">A${r.route_a}</span>`
                         + `<span class="rbadge${r.route_b ? ' on-b' : ''}">B${r.route_b}</span></td>`
                         + `<td class="n">${r.score}</td></tr>`).join('')
@@ -1005,7 +889,6 @@
             const message = inputField.value.trim();
 
             if (!message || !currentLevel) return;
-            const currentAvatars = META[currentLevel].avatars;
 
             // Lock the dropdown so they can't change levels mid-injection
             levelSelect.disabled = true;
@@ -1032,9 +915,6 @@
                 }
             }, 1000);
 
-            // Change to Thinking image
-            eagleImg.src = currentAvatars.think;
-
             const loadingId = 'loading-' + Date.now();
             chatBox.innerHTML += `<div class="message ai-msg" id="${loadingId}">System: Processing payload...</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -1050,7 +930,6 @@
                 document.getElementById(loadingId).remove();
 
                 if (!response.ok) {          // not signed in, or the level is still locked
-                    eagleImg.src = currentAvatars.idle;
                     chatBox.innerHTML += `<div class="message sys-msg">[!] ${escapeHtml(data.error)}</div>`;
                     levelSelect.disabled = false;
                     if (response.status === 401) openReg();
@@ -1062,23 +941,20 @@
                         chatBox.scrollTop = chatBox.scrollHeight;
                     }
 
-                    eagleImg.src = currentAvatars.talk;
-                    typeWriterEffect("Target AI: ", data.reply, currentAvatars.idle);
+                    typeWriterEffect("Target AI: ", data.reply);
                 } else {
-                    eagleImg.src = currentAvatars.idle;
                     chatBox.innerHTML += `<div class="message err-msg">Error: ${data.error}</div>`;
                     levelSelect.disabled = false; // Unlock on error
                 }
             } catch (error) {
                 document.getElementById(loadingId).remove();
-                eagleImg.src = currentAvatars.idle;
                 chatBox.innerHTML += `<div class="message err-msg">System Error: Connection to target lost.</div>`;
                 levelSelect.disabled = false; // Unlock on error
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function typeWriterEffect(prefix, text, idleImgSrc) {
+        function typeWriterEffect(prefix, text) {
             const msgDiv = document.createElement('div');
             msgDiv.className = 'message ai-msg';
             msgDiv.innerHTML = prefix;
@@ -1094,7 +970,6 @@
                     chatBox.scrollTop = chatBox.scrollHeight;
                     setTimeout(type, speed);
                 } else {
-                    eagleImg.src = idleImgSrc;
                     levelSelect.disabled = false;
                     (conversations[currentLevel] = conversations[currentLevel] || []).push({ role: "assistant", content: text });
                     saveConversations();
