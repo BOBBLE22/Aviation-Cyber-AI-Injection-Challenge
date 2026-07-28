@@ -339,7 +339,12 @@
         #board-table td.rank { font-family: var(--mono); color: var(--gold); width: 2.5em; }
         #board-table td.routes { white-space: nowrap; }
         #board-table td.routes .rbadge + .rbadge { margin-left: 4px; }
-        #level-select option:disabled { color: #56698a; }
+        /* Native popup: Chrome derives option colours from the control, which reads too dim on
+           this panel. Set them explicitly; color-scheme keeps the popup chrome dark. */
+        #level-select { color-scheme: dark; }
+        #level-select optgroup { background: #071729; color: var(--gold); font-style: normal; }
+        #level-select option { background: #071729; color: #eaf2ff; }
+        #level-select option:disabled { color: #7d90ab; }
 
         /* Route board. A = talked the key out, B = made it act. Both grey until earned,
            because a native <option> cannot be part-coloured. */
